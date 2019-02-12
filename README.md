@@ -2,13 +2,16 @@
 Convert a GeoJSON LineString network to an adjacency list.
 
 
-Given a GeoJSON LineString dataset, output an Adjacency List, and an Edge Hash.
+Given a GeoJSON LineString dataset, create;
+ - An Adjacency List
+ - An Edge Hash
+ - Connected Component Attribute
 
 **Usage**
 
 ```
 const fs = require('fs').promises;
-const toAdjacencyList = require('geojson-to-adjacency-list');
+const { toAdjacencyList, toEdgeHash, connectedComponents } = require('geojson-to-adjacency-list');
 
 main();
 
@@ -18,14 +21,10 @@ async function main() {
 
   const geojson = JSON.parse(geojson_raw);
 
-  const [adjacency_list, edge_hash] = toAdjacencyList(geojson);
-
-  const adjPr = fs.writeFile('./adjacency_list.json', JSON.stringify(adjacency_list), 'utf8');
-  const edgePr = fs.writeFile('./edge_hash.json', JSON.stringify(edge_hash), 'utf8');
-
-  await Promise.all([adjPr, edgePr]);
-
-  console.log('done!');
+  const adjacency_list = toAdjacencyList(geojson);
+  const edge_has = toEdgeHash(geojson);
+  const components = connectedComponets(geojson);
+  
 }
 ```
 
@@ -102,5 +101,59 @@ async function main() {
     }
   }
 }
+```
+
+**Edge Hash** Output Example:
+
+```
+[
+  {
+    "type": "Feature",
+    "properties": {
+      "ID": 162942
+      "__groupId": 1 // the sub-network size rank of the LineString
+    },
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-122.247284, 37.809112],
+        [-122.24746, 37.809089],
+        [-122.247918, 37.809272],
+        [-122.248153, 37.809548],
+        [-122.248176, 37.80973]
+      ]
+    }
+  },
+  {
+    "type": "Feature",
+    "properties": {
+      "ID": 152116,
+      "__groupId": 1
+    },
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-122.248176, 37.80973],
+        [-122.247834, 37.810009]
+      ]
+    }
+  },
+  {
+    "type": "Feature",
+    "properties": {
+      "ID": 158828,
+      "__groupId": 1
+    },
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-122.235421, 37.806529],
+        [-122.233833, 37.805664],
+        [-122.232246, 37.804412]
+      ]
+    }
+  }
+]
+
 ```
 
