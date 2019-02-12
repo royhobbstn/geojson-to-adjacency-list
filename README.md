@@ -103,7 +103,9 @@ async function main() {
 }
 ```
 
-**Edge Hash** Output Example:
+**Connected Component** Output Example:
+
+(returns original dataset with an additional `__groupId` property)
 
 ```
 [
