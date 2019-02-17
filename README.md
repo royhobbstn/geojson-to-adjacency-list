@@ -105,6 +105,8 @@ async function main() {
 
 **Connected Component** Output Example:
 
+For more information on this particular feature, see my blog post; [Cleaning a GeoJSON Network](https://www.danieltrone.com/post/clean-geojson-network-javascript/#beware-of-isolated-network-areas).
+
 (returns original dataset with an additional `__groupId` property)
 
 ```
