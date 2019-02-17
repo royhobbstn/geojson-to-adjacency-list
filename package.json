@@ -1,0 +1,19 @@
+{
+  "name": "geojson-to-adjacency-list",
+  "version": "2.0.1",
+  "description": "Convert a GeoJSON LineString network to an adjacency list.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/royhobbstn/geojson-to-adjacency-list.git"
+  },
+  "author": "Daniel Trone",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/royhobbstn/geojson-to-adjacency-list/issues"
+  },
+  "homepage": "https://github.com/royhobbstn/geojson-to-adjacency-list#readme"
+}
