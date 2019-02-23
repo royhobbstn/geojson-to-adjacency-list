@@ -1,10 +1,11 @@
 
 const fs = require('fs').promises;
+const BinaryHeap = require('./bh.js').BinaryHeap;
 
 exports.toEdgeHash = toEdgeHash;
 exports.toAdjacencyList = toAdjacencyList;
 exports.connectedComponents = connectedComponents;
-exports.runDijkstra = runDijkstra;
+exports.runBiDijkstra = runBiDijkstra;
 
 function toAdjacencyList (geo) {
 
@@ -132,65 +133,73 @@ function rankResults(results) {
 //
 
 
-function runDijkstra(adj_list, edge_hash, start, end) {
+function runBiDijkstra(adj_list, edge_hash, start, end) {
 
-  const vertices = Object.keys(adj_list);
+  const forward = {};
+  const backward = {};
 
-  const dist = {};  // distances to each node
-  const prev = {}; // node to parent_node lookup
+  const searchForward = doDijkstra(adj_list, edge_hash, forward, start);
+  const searchBackward = doDijkstra(adj_list, edge_hash, backward, end); //temp
 
-  const found = {}; // node has been discovered
+  let latest;
+  do {
+    searchForward.next();
+    latest = searchBackward.next().value;
+  } while (!forward.visited[latest]);
 
-  vertices.forEach(key=> {
-    dist[key] = Infinity;
+  // const geojson_forward = toBestRoute(latest, forward.prev, edge_hash);
+  // const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
+  //
+  // const path1 = fs.writeFile('./path1.geojson', JSON.stringify(geojson_forward), 'utf8');
+  // const path2 = fs.writeFile('./path2.geojson', JSON.stringify(geojson_backward), 'utf8');
+  //
+  // Promise.all([path1, path2])
+  //   .then(()=> {
+  //     console.log('done');
+  //   })
+  //   .catch(err=> {
+  //     console.log(err);
+  //   });
+
+}
+
+function* doDijkstra(graph, edge_hash, ref, current) {
+
+  const bh = new BinaryHeap();
+
+  ref.dist = {};  // distances to each node
+  ref.prev = {}; // node to parent_node lookup
+
+  ref.visited = {}; // node has been fully explored
+
+  Object.keys(graph).forEach(key=> {
+    ref.dist[key] = Infinity;
   });
 
-  let current = start;
-  dist[start] = 0;
+  ref.dist[current] = 0;
 
   do {
-    adj_list[current].forEach(node => {
+    graph[current].forEach(node => {
       const segment_distance = edge_hash[`${current}|${node}`].properties.MILES;
-      const proposed_distance = dist[current] + segment_distance;
-      if(proposed_distance < dist[node]) {
-        dist[node] = proposed_distance;
-        found[node] = true;
-        prev[node] = current;
+      const proposed_distance = ref.dist[current] + segment_distance;
+      if (proposed_distance < ref.dist[node]) {
+        if(ref.dist[node] !== Infinity) {
+          bh.remove(node)
+        }
+        ref.dist[node] = proposed_distance;
+        bh.push({key: node, dist: proposed_distance});
+        ref.prev[node] = current;
       }
     });
-    delete found[current];
+    ref.visited[current] = true;
+    bh.remove(current);
 
-    current = '';
-    let lowest_value = Infinity;
-    Object.keys(found).forEach( key => {
-      if(dist[key] < lowest_value) {
-        lowest_value = dist[key];
-        current = key;
-      }
-    });
+    // get lowest value from heap
+    current = bh.pop().key;
 
-    // exit early if current node becomes end node
-    if(current === end) {
-      current = '';
-    }
+    yield current
 
-  } while(current);
-
-//
-//   const point_layer = toPointLayer(dist);
-//   const geojson = toBestRoute(end, prev, edge_hash);
-//
-// const points = fs.writeFile('./points.geojson', JSON.stringify(point_layer), 'utf8');
-// const path = fs.writeFile('./path.geojson', JSON.stringify(geojson), 'utf8');
-//
-// Promise.all([points, path])
-//   .then(()=> {
-//     console.log('done');
-//   })
-//   .catch(err=> {
-//     console.log(err);
-//   });
-
+  } while (true)
 }
 
 function toBestRoute(end_pt, prev, edge_hash) {
