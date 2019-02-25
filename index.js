@@ -1,10 +1,13 @@
 
 const fs = require('fs').promises;
+const BinaryHeap = require('./bh.js').BinaryHeap;
 
 exports.toEdgeHash = toEdgeHash;
 exports.toAdjacencyList = toAdjacencyList;
 exports.connectedComponents = connectedComponents;
 exports.runDijkstra = runDijkstra;
+exports.toPointLayer = toPointLayer;
+exports.toBestRoute = toBestRoute;
 
 function toAdjacencyList (geo) {
 
@@ -131,15 +134,15 @@ function rankResults(results) {
 
 //
 
-
+// todo add priority queue
 function runDijkstra(adj_list, edge_hash, start, end) {
 
   const vertices = Object.keys(adj_list);
 
+  const bh = new BinaryHeap();
+
   const dist = {};  // distances to each node
   const prev = {}; // node to parent_node lookup
-
-  const found = {}; // node has been discovered
 
   vertices.forEach(key=> {
     dist[key] = Infinity;
@@ -152,22 +155,20 @@ function runDijkstra(adj_list, edge_hash, start, end) {
     adj_list[current].forEach(node => {
       const segment_distance = edge_hash[`${current}|${node}`].properties.MILES;
       const proposed_distance = dist[current] + segment_distance;
-      if(proposed_distance < dist[node]) {
+      if (proposed_distance < dist[node]) {
+        if(dist[node] !== Infinity) {
+          bh.decrease_key(node, proposed_distance)
+        } else {
+          bh.push({key: node, dist: proposed_distance});
+        }
         dist[node] = proposed_distance;
-        found[node] = true;
         prev[node] = current;
       }
     });
-    delete found[current];
+    bh.remove(current);
 
-    current = '';
-    let lowest_value = Infinity;
-    Object.keys(found).forEach( key => {
-      if(dist[key] < lowest_value) {
-        lowest_value = dist[key];
-        current = key;
-      }
-    });
+    // get lowest value from heap
+    current = bh.pop().key;
 
     // exit early if current node becomes end node
     if(current === end) {
@@ -178,7 +179,9 @@ function runDijkstra(adj_list, edge_hash, start, end) {
 
 //
 //   const point_layer = toPointLayer(dist);
-//   const geojson = toBestRoute(end, prev, edge_hash);
+  const geojson = toBestRoute(end, prev, edge_hash);
+
+  return geojson;
 //
 // const points = fs.writeFile('./points.geojson', JSON.stringify(point_layer), 'utf8');
 // const path = fs.writeFile('./path.geojson', JSON.stringify(geojson), 'utf8');
