@@ -97,6 +97,8 @@ function contractGraph(geojson, options) {
 
   fs.writeFileSync('./rankspts.geojson', JSON.stringify(viz2), 'utf8');
 
+  return [adjacency_list, edge_hash, contracted_nodes];
+
   // this function is multi-use:  actually contract a node  OR
   // with `get_count_only = true` find number of shortcuts added
   // if node were to be contracted
@@ -106,7 +108,10 @@ function contractGraph(geojson, options) {
       console.log('contract: ' + v);
     }
 
-    const connections = adjacency_list[v];
+    const connections = adjacency_list[v]
+      .filter(c => {
+        return !contracted_nodes[c];
+      });
     let shortcut_count = 0;
 
     // Get all pairs of edges

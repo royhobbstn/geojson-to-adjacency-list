@@ -12,13 +12,16 @@ async function main() {
   const geojson = JSON.parse(geojson_raw);
 
   console.time('contracted');
-  const contracted = contractGraph(geojson, {cost_field: 'MILES'});
+  const [new_adj, new_edge, node_rank] = contractGraph(geojson, {cost_field: 'MILES'});
   console.timeEnd('contracted');
 
-  // console.time('runBiDijkstra');
-  // // const dijkstra = runBiDijkstra(adjacency, edge_list,  '-122.026583,37.334387', '-121.959595,37.294017', 'MILES'); // issues
+  const adjacency = toAdjacencyList(geojson);
+  const edge_list = toEdgeHash(geojson);
+
+  console.time('runBiDijkstra');
+  const dijkstra = runBiDijkstra(new_adj, new_edge,  '-122.026583,37.334387', '-121.959595,37.294017', 'MILES', node_rank); // issues
   // const dijkstra = runBiDijkstra(adjacency, edge_list,  '-152.07283,65.171303', '-111.099365,32.162209', 'MILES');
-  // console.timeEnd('runBiDijkstra');
+  console.timeEnd('runBiDijkstra');
 
   // console.time('runDijkstra');
   // // const dijkstra = runDijkstra(adjacency, edge_list,  '-122.026583,37.334387', '-121.959595,37.294017', 'MILES'); // issues
