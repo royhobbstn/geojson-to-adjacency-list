@@ -1,15 +1,14 @@
+let debug = false;
 
-const fs = require('fs').promises;
 const BinaryHeap = require('./bh.js').BinaryHeap;
 
 exports.toEdgeHash = toEdgeHash;
 exports.toAdjacencyList = toAdjacencyList;
 exports.connectedComponents = connectedComponents;
 exports.runDijkstra = runDijkstra;
-exports.toPointLayer = toPointLayer;
 exports.toBestRoute = toBestRoute;
 
-function toAdjacencyList (geo) {
+function toAdjacencyList(geo) {
 
   const features = Array.isArray(geo) ? geo : geo.features;
 
@@ -17,19 +16,19 @@ function toAdjacencyList (geo) {
 
   features.forEach(feature => {
     const coordinates = feature.geometry.coordinates;
-    if(!coordinates) {
+    if (!coordinates) {
       return;
     }
     const start_vertex = coordinates[0].join(',');
     const end_vertex = coordinates[coordinates.length - 1].join(',');
 
-    if(!adjacency_list[start_vertex]) {
+    if (!adjacency_list[start_vertex]) {
       adjacency_list[start_vertex] = [end_vertex];
     } else {
       adjacency_list[start_vertex].push(end_vertex);
     }
 
-    if(!adjacency_list[end_vertex]) {
+    if (!adjacency_list[end_vertex]) {
       adjacency_list[end_vertex] = [start_vertex];
     } else {
       adjacency_list[end_vertex].push(start_vertex);
@@ -48,7 +47,7 @@ function toEdgeHash(geo) {
 
   features.forEach(feature => {
     const coordinates = feature.geometry.coordinates;
-    if(!coordinates) {
+    if (!coordinates) {
       return;
     }
     const start_vertex = coordinates[0].join(',');
@@ -86,7 +85,7 @@ function connectedComponents(geo) {
   // loop through node list, making sure they are all explored.
   // Depth first search
   nodeList.forEach(node => {
-    if(!explored[node]) {
+    if (!explored[node]) {
 
       connected_component++;
 
@@ -103,7 +102,7 @@ function connectedComponents(geo) {
     component_count++;
     explored[vertex] = connected_component;
     adjacencyList[vertex].forEach(v => {
-      if(!explored[v]) {
+      if (!explored[v]) {
         explore(v);
       }
     });
@@ -115,7 +114,7 @@ function connectedComponents(geo) {
   // create copy of geo data with connected component rank
   return features.map(feature => {
     const start_pt = feature.geometry.coordinates[0];
-    const properties = {...feature.properties, __groupId: ranked_lookup[explored[start_pt]] };
+    const properties = {...feature.properties, __groupId: ranked_lookup[explored[start_pt]]};
     return Object.assign({}, feature, {properties});
   });
 
@@ -134,17 +133,23 @@ function rankResults(results) {
 
 //
 
-// todo add priority queue
-function runDijkstra(adj_list, edge_hash, start, end) {
+function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
 
-  const vertices = Object.keys(adj_list);
+  if(debug) {
+    console.log('dij', {start, end, vertex});
+  }
+
+  const vertices = Object.keys(adj_list)
+    .filter(node => {
+      return node !== vertex;
+    });
 
   const bh = new BinaryHeap();
 
   const dist = {};  // distances to each node
   const prev = {}; // node to parent_node lookup
 
-  vertices.forEach(key=> {
+  vertices.forEach(key => {
     dist[key] = Infinity;
   });
 
@@ -152,47 +157,45 @@ function runDijkstra(adj_list, edge_hash, start, end) {
   dist[start] = 0;
 
   do {
-    adj_list[current].forEach(node => {
-      const segment_distance = edge_hash[`${current}|${node}`].properties.MILES;
-      const proposed_distance = dist[current] + segment_distance;
-      if (proposed_distance < dist[node]) {
-        if(dist[node] !== Infinity) {
-          bh.decrease_key(node, proposed_distance)
-        } else {
-          bh.push({key: node, dist: proposed_distance});
+    adj_list[current]
+      .filter(node => {
+        return node !== vertex;
+      })
+      .forEach(node => {
+        const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
+        const proposed_distance = dist[current] + segment_distance;
+        if (proposed_distance < dist[node]) {
+          if (dist[node] !== Infinity) {
+            bh.decrease_key(node, proposed_distance)
+          } else {
+            bh.push({key: node, value: proposed_distance});
+          }
+          dist[node] = proposed_distance;
+          prev[node] = current;
         }
-        dist[node] = proposed_distance;
-        prev[node] = current;
-      }
-    });
+      });
     bh.remove(current);
 
     // get lowest value from heap
-    current = bh.pop().key;
+    const popped_item = bh.pop();
+
+    if(popped_item) {
+      current = popped_item.key;
+    } else {
+      if(debug){
+        console.log('NO PATH!');
+      }
+      current = ''; // no path
+    }
 
     // exit early if current node becomes end node
-    if(current === end) {
+    if (current === end) {
       current = '';
     }
 
-  } while(current);
+  } while (current);
 
-//
-//   const point_layer = toPointLayer(dist);
-  const geojson = toBestRoute(end, prev, edge_hash);
-
-  return geojson;
-//
-// const points = fs.writeFile('./points.geojson', JSON.stringify(point_layer), 'utf8');
-// const path = fs.writeFile('./path.geojson', JSON.stringify(geojson), 'utf8');
-//
-// Promise.all([points, path])
-//   .then(()=> {
-//     console.log('done');
-//   })
-//   .catch(err=> {
-//     console.log(err);
-//   });
+  return toBestRoute(end, prev, edge_hash);
 
 }
 
@@ -200,7 +203,7 @@ function toBestRoute(end_pt, prev, edge_hash) {
 
   const features = [];
 
-  while(prev[end_pt]) {
+  while (prev[end_pt]) {
     features.push(edge_hash[`${end_pt}|${prev[end_pt]}`]);
     end_pt = prev[end_pt];
   }
@@ -210,27 +213,4 @@ function toBestRoute(end_pt, prev, edge_hash) {
     "features": features
   };
 
-}
-
-// return a GeoJSON Collection of Points with distance from origin.
-function toPointLayer(dist) {
-
-  const features = Object.keys(dist).map(key=> {
-    return {
-      "type": "Feature",
-      "properties": {
-        "distance": dist[key],
-        "coords": key,
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": key.split(',').map(k => Number(k))
-      }
-    }
-  });
-
-  return {
-    "type": "FeatureCollection",
-    "features": features
-  };
 }

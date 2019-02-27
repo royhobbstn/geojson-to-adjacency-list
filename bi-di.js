@@ -7,15 +7,15 @@ const toBestRoute = require('./index.js').toBestRoute;
 exports.runBiDijkstra = runBiDijkstra;
 
 
-function runBiDijkstra(adj_list, edge_hash, start, end) {
+function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
 
   // TODO this is not guaranteed to be an optimal solution (yet)
 
   const forward = {};
   const backward = {};
 
-  const searchForward = doDijkstra(adj_list, edge_hash, forward, start);
-  const searchBackward = doDijkstra(adj_list, edge_hash, backward, end); // TODO will be different in the case of a directed graph
+  const searchForward = doDijkstra(adj_list, edge_hash, forward, start, cost_field);
+  const searchBackward = doDijkstra(adj_list, edge_hash, backward, end, cost_field);
 
   let latest;
   do {
@@ -25,21 +25,12 @@ function runBiDijkstra(adj_list, edge_hash, start, end) {
 
   const geojson_forward = toBestRoute(latest, forward.prev, edge_hash);
   const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
-  //
-  // const path1 = fs.writeFile('./path1.geojson', JSON.stringify(geojson_forward), 'utf8');
-  // const path2 = fs.writeFile('./path2.geojson', JSON.stringify(geojson_backward), 'utf8');
-  //
-  // Promise.all([path1, path2])
-  //   .then(()=> {
-  //     console.log('done');
-  //   })
-  //   .catch(err=> {
-  //     console.log(err);
-  //   });
+
+  return;
 
 }
 
-function* doDijkstra(graph, edge_hash, ref, current) {
+function* doDijkstra(graph, edge_hash, ref, current, cost_field) {
 
   const bh = new BinaryHeap();
 
@@ -56,13 +47,13 @@ function* doDijkstra(graph, edge_hash, ref, current) {
 
   do {
     graph[current].forEach(node => {
-      const segment_distance = edge_hash[`${current}|${node}`].properties.MILES;
+      const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
       if (proposed_distance < ref.dist[node]) {
         if(ref.dist[node] !== Infinity) {
           bh.decrease_key(node, proposed_distance)
         } else {
-          bh.push({key: node, dist: proposed_distance});
+          bh.push({key: node, value: proposed_distance});
         }
         ref.dist[node] = proposed_distance;
         ref.prev[node] = current;

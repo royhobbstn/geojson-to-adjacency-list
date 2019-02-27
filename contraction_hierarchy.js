@@ -1,28 +1,29 @@
-
 //
+let debug = false;
+
+const fs = require('fs');
+const links = [];
 
 // TODO ArcFlags?
 
-const fs = require('fs').promises;
 const BinaryHeap = require('./bh.js').BinaryHeap;
-const { toAdjacencyList, toEdgeHash, runDijkstra } = require('./index.js');
+const {toAdjacencyList, toEdgeHash, runDijkstra} = require('./index.js');
 
 exports.contractGraph = contractGraph;
 
-function contractGraph(geojson) {
+function contractGraph(geojson, options) {
 
-  const contracted_nodes = {};
+  const cost_field = options.cost_field;
 
   const adjacency_list = toAdjacencyList(geojson);
   const edge_hash = toEdgeHash(geojson);
-
-  const vertex_set = Object.keys(adjacency_list); // todo order vertex set
-
   const bh = new BinaryHeap();
+  const contracted_nodes = {};
 
-  vertex_set.forEach(vertex => {
+  // create an additional node ordering
+  Object.keys(adjacency_list).forEach(vertex => {
     const score = getVertexScore(vertex);
-    bh.push({key: vertex, dist: score});
+    bh.push({key: vertex, value: score});
   });
 
   function getVertexScore(v) {
@@ -30,7 +31,6 @@ function contractGraph(geojson) {
     const edge_count = adjacency_list[v].length;
     const edge_difference = shortcut_count - edge_count;
     const contracted_neighbors = getContractedNeighborCount(v);
-    console.log(edge_difference, contracted_neighbors);
     return edge_difference + contracted_neighbors;
   }
 
@@ -43,41 +43,70 @@ function contractGraph(geojson) {
 
   let contraction_level = 1;
 
-  console.log(bh.length());
+  // main contraction loop
+  while (bh.length() > 0) {
 
-  while(bh.length() > 1) {
-
+    // recompute to make sure that first node in priority queue
+    // is still best canditate to contract
     let found_lowest = false;
+    let node_obj = bh.peek();
     do {
-      const node_obj = bh.peek(); // todo peek duplicated kinda
       const first_vertex = node_obj.key;
       const score = getVertexScore(first_vertex);
       bh.decrease_key(first_vertex, score);
-      const check_node = bh.peek();
-      if(check_node.key === first_vertex) {
-        console.log('hit');
+      node_obj = bh.peek();
+      if (node_obj.key === first_vertex) {
         found_lowest = true;
-      } else {
-        console.log('miss');
       }
-    } while(found_lowest === false);
+    } while (found_lowest === false);
 
+    // lowest found, pop it off the queue and contract it
     const v = bh.pop();
-    // console.log(v);
-    contract(v.key);
-
+    contract(v.key, false);
+    // keep a record of contraction level of each node
     contracted_nodes[v.key] = contraction_level;
     contraction_level++;
   }
 
-  fs.writeFile('./shortcuts.geojson', JSON.stringify(geojson), 'utf8');
+  const viz = {
+    "type": "FeatureCollection",
+    "features": links
+  };
 
+  fs.writeFileSync('./geohash.geojson', JSON.stringify(viz), 'utf8');
+
+  const features = Object.keys(contracted_nodes).map(key=> {
+    return {
+      "type": "Feature",
+      "properties": {
+        "rank": contracted_nodes[key],
+        "coords": key,
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": key.split(',').map(k => Number(k))
+      }
+    };
+  });
+
+
+  const viz2 = {
+    "type": "FeatureCollection",
+    "features": features
+  };
+
+  fs.writeFileSync('./rankspts.geojson', JSON.stringify(viz2), 'utf8');
+
+  // this function is multi-use:  actually contract a node  OR
+  // with `get_count_only = true` find number of shortcuts added
+  // if node were to be contracted
   function contract(v, get_count_only) {
+    if(!get_count_only && debug){
+      console.log('-------------------------------------');
+      console.log('contract: ' + v);
+    }
 
     const connections = adjacency_list[v];
-    // if(!get_count_only){
-    //   console.log(connections);
-    // }
     let shortcut_count = 0;
 
     // Get all pairs of edges
@@ -85,61 +114,77 @@ function contractGraph(geojson) {
     connections.forEach(u => {
       connections.forEach(w => {
         // ignore point to itself, and reverse path
-        if(u === w || combinations.includes(`${w}|${u}`)) {
+        if (u === w || combinations.includes(`${w}|${u}`)) {
           return;
         }
         combinations.push(`${u}|${w}`);
       });
     });
 
+    if(!get_count_only && debug){
+      console.log({combinations});
+    }
+
     // shortcut distance for each path
-    combinations.forEach(c=> {
+    combinations.forEach(c => {
+      if(!get_count_only && debug){
+        console.log('combination: ' + c);
+      }
       const [u, w] = c.split('|');
       // dist u to v
-      const dist1 = edge_hash[`${u}|${v}`].properties.MILES;
+      const dist1 = edge_hash[`${u}|${v}`].properties[cost_field];
       // dist v to w
-      const dist2 = edge_hash[`${v}|${w}`].properties.MILES;
+      const dist2 = edge_hash[`${v}|${w}`].properties[cost_field];
       const total = dist1 + dist2;
 
       // get dijkstra shortest path distance for u to w
-      const path = runDijkstra(adjacency_list, edge_hash, u, w);
-      const dijkstra = path.features.reduce((acc, feature) => {
-        return acc + feature.properties.MILES;
-      }, 0);
+      const path = runDijkstra(adjacency_list, edge_hash, u, w, cost_field, v);
+      const dijkstra =  path.features.length ? path.features.reduce((acc, feature) => {
+        return acc + feature.properties[cost_field];
+      }, 0) : Infinity;
 
-      // todo: many times, dijkstra finds the path through v
-      // does that mean I need to delete v before running dijkstra?
-      // or can i do what i just did below?
-      // TODO hint:  Then remove v and its adjacent arcs from the graph
-      if(total <= dijkstra) {
+      if(!get_count_only && debug){
+        console.log({u,w,v});
+        console.log({path});
+        console.log({total});
+        console.log({dijkstra});
+      }
+
+      if (total < dijkstra) {
+        if(!get_count_only && debug){
+          console.log('shortcut !');
+        }
+
         shortcut_count++;
 
-        if(!get_count_only) {
-          // adjacency_list[u].push(w);
-          // adjacency_list[w].push(u);
+        if (!get_count_only) {
+          adjacency_list[u].push(w);
+          adjacency_list[w].push(u);
 
-          // temporary - in order to visualize
-          const shortcut = {
-            type: 'Feature',
-            properties:
-              {
-                ID: 99999,
-                MILES: total
-              },
-            geometry:
-              {
-                type: 'LineString',
-                coordinates:
-                  [u.split(',').map(d => Number(d)),
-                    w.split(',').map(d => Number(d))]
-              }
+          const seg1_id = edge_hash[`${u}|${v}`].properties.ID;
+          const seg2_id = edge_hash[`${v}|${w}`].properties.ID;
+
+          if (!seg1_id || !seg2_id) {
+            console.log('PANIC');
+          }
+
+          const link = {
+            "type": "Feature",
+            "properties": {
+              "distance": total,
+              "coords1": seg1_id,
+              "coords2": seg2_id,
+            },
+            "geometry": {
+              "type": "LineString",
+              "coordinates": [u.split(',').map(k => Number(k)), w.split(',').map(k => Number(k))]
+            }
           };
 
-          // todo visualize contraction order (point layer)
+          links.push(link);
 
-          geojson.features.push(shortcut);
-          // edge_hash[`${u}|${w}`] = {properties: {MILES: total}};
-          // edge_hash[`${w}|${u}`] = {properties: {MILES: total}};
+          edge_hash[`${u}|${w}`] = {properties: {[cost_field]: total, segments: [seg1_id, seg2_id]}};
+          edge_hash[`${w}|${u}`] = {properties: {[cost_field]: total, segments: [seg1_id, seg2_id]}};
         }
       }
 
@@ -150,29 +195,3 @@ function contractGraph(geojson) {
 
 
 }
-
-//
-// Node Order
-//
-// edge difference #shortcuts – #edges incident to v
-// uniformity e.g. #deleted neighbors
-//
-// integrated construction and ordering:
-// 1 remove node v on top of the priority queue
-// 2 contract node v
-// 3 update weights of remaining nodes
-
-// – Let G = G'0 be the initial graph
-// – Let Gi be the graph obtained from Gi-1 by contracting
-// ui
-// that is, without
-// ui and adjacent arcs and with shortcuts
-// in particular therefore,
-//   Gi has n – i nodes
-// – In the end, let G* = the original graph with all nodes and
-// arcs and all shortcuts from any of the
-// G
-// 1, G
-// 2, ...
-// – In the implementation, we can work on one and the same
-// graph data structure throughout the algorithm
