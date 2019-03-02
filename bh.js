@@ -13,6 +13,10 @@ BinaryHeap.prototype = {
     return this.heap.length;
   },
 
+  getArray: function() {
+    return this.heap;
+  },
+
   push: function(element) {
     // Add the new element to the end of the array.
     this.heap.push(element);

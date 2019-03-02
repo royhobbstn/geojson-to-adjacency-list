@@ -18,13 +18,48 @@ function contractGraph(geojson, options) {
   const adjacency_list = toAdjacencyList(geojson);
   const edge_hash = toEdgeHash(geojson);
   const bh = new BinaryHeap();
+  const ih = new BinaryHeap();
+
   const contracted_nodes = {};
 
   // create an additional node ordering
   Object.keys(adjacency_list).forEach(vertex => {
     const score = getVertexScore(vertex);
     bh.push({key: vertex, value: score});
+    ih.push({key: vertex, value: score});
+
   });
+
+  const ordered = [];
+
+  while(ih.length() > 0) {
+    const item = ih.pop();
+    // console.log(item);
+    ordered.push(item);
+  }
+
+  const ifeatures = ordered.map((element, index) => {
+    return {
+      "type": "Feature",
+      "properties": {
+        "rank": index + 1,
+        "coords": element.key,
+        "score": element.value
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": element.key.split(',').map(k => Number(k))
+      }
+    };
+  });
+
+
+  const initial = {
+    "type": "FeatureCollection",
+    "features": ifeatures
+  };
+
+  fs.writeFileSync('./initial_rank.geojson', JSON.stringify(initial), 'utf8');
 
   function getVertexScore(v) {
     const shortcut_count = contract(v, true);
@@ -75,7 +110,7 @@ function contractGraph(geojson, options) {
 
   fs.writeFileSync('./geohash.geojson', JSON.stringify(viz), 'utf8');
 
-  const features = Object.keys(contracted_nodes).map(key=> {
+  const features = Object.keys(contracted_nodes).map(key => {
     return {
       "type": "Feature",
       "properties": {
@@ -103,7 +138,7 @@ function contractGraph(geojson, options) {
   // with `get_count_only = true` find number of shortcuts added
   // if node were to be contracted
   function contract(v, get_count_only) {
-    if(!get_count_only && debug){
+    if (!get_count_only && debug) {
       console.log('-------------------------------------');
       console.log('contract: ' + v);
     }
@@ -126,13 +161,13 @@ function contractGraph(geojson, options) {
       });
     });
 
-    if(!get_count_only && debug){
+    if (!get_count_only && debug) {
       console.log({combinations});
     }
 
     // shortcut distance for each path
     combinations.forEach(c => {
-      if(!get_count_only && debug){
+      if (!get_count_only && debug) {
         console.log('combination: ' + c);
       }
       const [u, w] = c.split('|');
@@ -144,19 +179,19 @@ function contractGraph(geojson, options) {
 
       // get dijkstra shortest path distance for u to w
       const path = runDijkstra(adjacency_list, edge_hash, u, w, cost_field, v);
-      const dijkstra =  path.features.length ? path.features.reduce((acc, feature) => {
+      const dijkstra = path.features.length ? path.features.reduce((acc, feature) => {
         return acc + feature.properties[cost_field];
       }, 0) : Infinity;
 
-      if(!get_count_only && debug){
-        console.log({u,w,v});
+      if (!get_count_only && debug) {
+        console.log({u, w, v});
         console.log({path});
         console.log({total});
         console.log({dijkstra});
       }
 
       if (total < dijkstra) {
-        if(!get_count_only && debug){
+        if (!get_count_only && debug) {
           console.log('shortcut !');
         }
 
@@ -168,10 +203,6 @@ function contractGraph(geojson, options) {
 
           const seg1_id = edge_hash[`${u}|${v}`].properties.ID;
           const seg2_id = edge_hash[`${v}|${w}`].properties.ID;
-
-          if (!seg1_id || !seg2_id) {
-            console.log('PANIC');
-          }
 
           const link = {
             "type": "Feature",
@@ -188,15 +219,26 @@ function contractGraph(geojson, options) {
 
           links.push(link);
 
-          edge_hash[`${u}|${w}`] = {properties: {[cost_field]: total, segments: [seg1_id, seg2_id]}};
-          edge_hash[`${w}|${u}`] = {properties: {[cost_field]: total, segments: [seg1_id, seg2_id]}};
+          edge_hash[`${u}|${w}`] = {
+            "properties": {
+              [cost_field]: total,
+              ID: `${seg1_id},${seg2_id}`
+            }
+          };
+
+          edge_hash[`${w}|${u}`] = {
+            "properties": {
+              [cost_field]: total,
+              ID: `${seg1_id},${seg2_id}`
+            }
+
+          };
+
         }
       }
-
     });
 
     return shortcut_count;
+
   }
-
-
 }
