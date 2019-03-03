@@ -53,7 +53,6 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
   const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
 
   if(save_output) {
-
     console.log('forward');
     geojson_forward.features.forEach(g=> {
       console.log(g.properties.ID, g.properties[cost_field]);
@@ -101,7 +100,6 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
     fs.writeFile('./path2.geojson', JSON.stringify(bc), 'utf8');
   }
 
-
 }
 
 function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, direction) {
@@ -109,35 +107,25 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
   const heap = new FibonacciHeap();
   const key_to_nodes = {};
 
-
   ref.dist = {};  // distances to each node
   ref.prev = {}; // node to parent_node lookup
-
   ref.visited = {}; // node has been fully explored
-
-  Object.keys(graph).forEach(key=> {
-    ref.dist[key] = Infinity;
-  });
-
   ref.dist[current] = 0;
 
-  const current_rank = node_rank[current];
-
-  let explored = 0;
-
   do {
-    explored++;
+    const current_rank = node_rank[current];
 
     if(debug) {
       console.log(direction);
-      console.log({current, explored});
+      console.log({current});
       console.time('bi-di-ch');
     }
 
     graph[current].forEach(node => {
       if(debug){
-        console.log(node_rank[node], current_rank);
+        console.log({node_rank: node_rank[node], current_rank});
       }
+      // visited check not necessary because rank would be lower
       if(node_rank[node] < current_rank) {
         if(debug){
           console.log('reject', node);
@@ -146,12 +134,11 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
-      if (proposed_distance < ref.dist[node]) {
-        if(ref.dist[node] !== Infinity) {
+      if (proposed_distance < (ref.dist[node] || Infinity)) {
+        if(ref.dist[node] !== undefined) {
           heap.decreaseKey(key_to_nodes[node], proposed_distance);
         } else {
-          const n = heap.insert(proposed_distance, node);
-          key_to_nodes[node] = n;
+          key_to_nodes[node] = heap.insert(proposed_distance, node);
         }
         ref.dist[node] = proposed_distance;
         ref.prev[node] = current;

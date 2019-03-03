@@ -1,6 +1,9 @@
-let debug = false;
 
-const BinaryHeap = require('./bh.js').BinaryHeap;
+const fs = require('fs').promises;
+const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
+
+const debug = false;
+const save_output = true;
 
 exports.toEdgeHash = toEdgeHash;
 exports.toAdjacencyList = toAdjacencyList;
@@ -139,19 +142,12 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
     console.log('dij', {start, end, vertex});
   }
 
-  const vertices = Object.keys(adj_list)
-    .filter(node => {
-      return node !== vertex;
-    });
-
-  const bh = new BinaryHeap();
+  const heap = new FibonacciHeap();
+  const key_to_nodes = {};
 
   const dist = {};  // distances to each node
   const prev = {}; // node to parent_node lookup
-
-  vertices.forEach(key => {
-    dist[key] = Infinity;
-  });
+  const visited = {}; // node has been fully explored
 
   let current = start;
   dist[start] = 0;
@@ -162,25 +158,28 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
         return node !== vertex;
       })
       .forEach(node => {
+        if(visited[node]) {
+          return;
+        }
         const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
         const proposed_distance = dist[current] + segment_distance;
-        if (proposed_distance < dist[node]) {
-          if (dist[node] !== Infinity) {
-            bh.decrease_key(node, proposed_distance)
+        if (proposed_distance < (dist[node] || Infinity)) {
+          if (dist[node] !== undefined) {
+            heap.decreaseKey(key_to_nodes[node], proposed_distance);
           } else {
-            bh.push({key: node, value: proposed_distance});
+            key_to_nodes[node] = heap.insert(proposed_distance, node);
           }
           dist[node] = proposed_distance;
           prev[node] = current;
         }
       });
-    bh.remove(current);
+    visited[current] = true;
 
     // get lowest value from heap
-    const popped_item = bh.pop();
+    const elem = heap.extractMinimum();
 
-    if(popped_item) {
-      current = popped_item.key;
+    if(elem) {
+      current = elem.value;
     } else {
       if(debug){
         console.log('NO PATH!');
@@ -195,8 +194,13 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
 
   } while (current);
 
-  return toBestRoute(end, prev, edge_hash);
+  const route = toBestRoute(end, prev, edge_hash);
 
+  if(save_output){
+   fs.writeFile('./single_dijkstra.geojson', JSON.stringify(route), 'utf8');
+  }
+
+  return route;
 }
 
 function toBestRoute(end_pt, prev, edge_hash) {

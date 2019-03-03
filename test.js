@@ -12,7 +12,7 @@ main();
 
 async function main() {
 
-  const geojson_raw = await fs.readFile('./sample.geojson'); // full_network
+  const geojson_raw = await fs.readFile('./full_network.geojson'); // full_network
 
   const geojson = JSON.parse(geojson_raw);
 
@@ -21,7 +21,7 @@ async function main() {
       return true;
     }
   });
-
+  //
   // console.time('contracted');
   // const [new_adj, new_edge, node_rank] = contractGraph(geojson, {cost_field: 'MILES'});
   // console.timeEnd('contracted');
@@ -38,20 +38,20 @@ async function main() {
   const id_list = toIdList(geojson);
 
   console.time('CH');
-  const sample1 = runBiDijkstra(new_adj, new_edge,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES', node_rank, id_list);
+  // const sample1 = runBiDijkstra(new_adj, new_edge,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES', node_rank, id_list);
   // const small1 = runBiDijkstra(new_adj, new_edge,  '-122.026583,37.334387', '-121.993577,37.289151', 'MILES', node_rank, id_list);
-  // const pacific1 = runBiDijkstra(new_adj, new_edge,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES', node_rank, id_list);
+  const pacific1 = runBiDijkstra(new_adj, new_edge,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES', node_rank, id_list);
   console.timeEnd('CH');
 
   console.time('biDimensional');
-  const sample2 = biDiPlain(adjacency, edge_list,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES');
+  // const sample2 = biDiPlain(adjacency, edge_list,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES');
   // const small2 = biDiPlain(adjacency, edge_list,  '-122.026583,37.334387', '-121.993577,37.289151', 'MILES');
-  // const pacific2 = biDiPlain(adjacency, edge_list,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES');
+  const pacific2 = biDiPlain(adjacency, edge_list,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES');
   console.timeEnd('biDimensional');
 
   console.time('dijkstra');
-  const sample3 = runDijkstra(adjacency, edge_list,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES');
-  // const small3 = biDiPlain(adjacency, edge_list,  '-122.026583,37.334387', '-121.993577,37.289151', 'MILES');
-  // const pacific3 = biDiPlain(adjacency, edge_list,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES');
+  // const sample3 = runDijkstra(adjacency, edge_list,  '-122.247284,37.809112', '-121.974367,37.323066', 'MILES');
+  // const small3 = runDijkstra(adjacency, edge_list,  '-122.026583,37.334387', '-121.993577,37.289151', 'MILES');
+  const pacific3 = runDijkstra(adjacency, edge_list,  '-117.343748,48.046597', '-117.21164,32.743957', 'MILES');
   console.timeEnd('dijkstra');
 }
