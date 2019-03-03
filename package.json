@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/royhobbstn/geojson-to-adjacency-list/issues"
   },
-  "homepage": "https://github.com/royhobbstn/geojson-to-adjacency-list#readme"
+  "homepage": "https://github.com/royhobbstn/geojson-to-adjacency-list#readme",
+  "dependencies": {
+    "@tyriar/fibonacci-heap": "^2.0.9"
+  }
 }

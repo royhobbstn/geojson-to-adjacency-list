@@ -22,8 +22,10 @@ function contractGraph(geojson, options) {
 
   const contracted_nodes = {};
 
+  const clen = Object.keys(adjacency_list).length;
   // create an additional node ordering
-  Object.keys(adjacency_list).forEach(vertex => {
+  Object.keys(adjacency_list).forEach((vertex,i) => {
+    console.log(i/clen);
     const score = getVertexScore(vertex);
     bh.push({key: vertex, value: score});
     ih.push({key: vertex, value: score});
@@ -80,6 +82,8 @@ function contractGraph(geojson, options) {
 
   // main contraction loop
   while (bh.length() > 0) {
+
+    console.log(bh.length());
 
     // recompute to make sure that first node in priority queue
     // is still best canditate to contract

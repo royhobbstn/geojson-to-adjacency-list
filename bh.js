@@ -1,13 +1,29 @@
 // Full Credit: http://eloquentjavascript.net/1st_edition/appendix2.html
 
+const {
+  performance
+} = require('perf_hooks');
+
+let debug = false;
+
 // TODO this can be improved:  https://stackoverflow.com/questions/17009056/how-to-implement-ologn-decrease-key-operation-for-min-heap-based-priority-queu
 // either a supplementary structure, or by not using decrease-key at all (see additional answers to question above)
 
+
 function BinaryHeap(){
   this.heap = [];
+  this.timer = 0;
 }
 
 BinaryHeap.prototype = {
+
+  elapsed: function () {
+    console.log({timer: this.timer});
+  },
+
+  reset: function () {
+    this.timer = 0;
+  },
 
   length: function () {
     return this.heap.length;
@@ -18,13 +34,20 @@ BinaryHeap.prototype = {
   },
 
   push: function(element) {
+    const t = performance.now();
     // Add the new element to the end of the array.
     this.heap.push(element);
     // Allow it to bubble up.
     this.bubbleUp(this.heap.length - 1);
+    const z = performance.now();
+    if(debug){
+      console.log('push:', z-t);
+    }
+    this.timer += (z - t);
   },
 
   pop: function() {
+    const t = performance.now();
     // Store the first element so we can return it later.
     const result = this.heap[0];
     // Get the element at the end of the array.
@@ -34,6 +57,11 @@ BinaryHeap.prototype = {
       this.heap[0] = end;
       this.sinkDown(0);
     }
+    const z = performance.now();
+    if(debug){
+      console.log('pop:', z-t);
+    }
+    this.timer += (z - t);
     return result;
   },
 
@@ -43,6 +71,7 @@ BinaryHeap.prototype = {
   },
 
   remove: function(key) {
+    const t = performance.now();
     const length = this.heap.length;
     // To remove a value, we must search through the array to find it.
     for (let i = 0; i < length; i++) {
@@ -62,9 +91,15 @@ BinaryHeap.prototype = {
       this.sinkDown(i);
       break;
     }
+    const z = performance.now();
+    if(debug){
+      console.log('remove:', z-t);
+    }
+    this.timer += (z - t);
   },
 
   decrease_key: function(key, value) {
+    const t = performance.now();
     // TODO this is not technically "decrease" key.
     // Increase works too
     const length = this.heap.length;
@@ -80,6 +115,11 @@ BinaryHeap.prototype = {
       this.sinkDown(i);
       break;
     }
+    const z = performance.now();
+    if(debug){
+      console.log('decrease:', z-t);
+    }
+    this.timer += (z - t);
   },
 
   bubbleUp: function(n) {
