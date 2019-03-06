@@ -1,5 +1,5 @@
 
-const fs = require('fs').promises;
+const fs = require('fs');
 const toBestRoute = require('./index.js').toBestRoute;
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
 
@@ -46,9 +46,11 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       }
     }
 
-  } while (!forward.visited[sb.value]);
+  } while (!forward.dist[sb.value]);
+  // } while (!forward.visited[sb.value]);
 
   const latest = sb.value;
+
   const geojson_forward = toBestRoute(latest, forward.prev, edge_hash);
   const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
 
@@ -96,8 +98,8 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       "features": bb.map(d=>id_list[d])
     };
 
-    fs.writeFile('./path1.geojson', JSON.stringify(fc), 'utf8');
-    fs.writeFile('./path2.geojson', JSON.stringify(bc), 'utf8');
+    fs.writeFileSync('./path1.geojson', JSON.stringify(fc), 'utf8');
+    fs.writeFileSync('./path2.geojson', JSON.stringify(bc), 'utf8');
   }
 
 }
@@ -125,7 +127,9 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       if(debug){
         console.log({node_rank: node_rank[node], current_rank});
       }
-      // visited check not necessary because rank would be lower
+      if(ref.visited[node]) {
+        return;
+      }
       if(node_rank[node] < current_rank) {
         if(debug){
           console.log('reject', node);
@@ -134,7 +138,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
-      if (proposed_distance < (ref.dist[node] || Infinity)) {
+      if (proposed_distance < (ref.dist[node] === undefined ? Infinity : 0)) {
         if(ref.dist[node] !== undefined) {
           heap.decreaseKey(key_to_nodes[node], proposed_distance);
         } else {
@@ -149,7 +153,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     // get lowest value from heaps
     const elem = heap.extractMinimum();
     if(debug) {
-      console.log(direction, elem.key, elem.value);
+      console.log(direction, elem);
     }
     if(elem) {
       current = elem.value;

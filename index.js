@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
 
 const debug = false;
-const save_output = true;
+const save_output = false;
 
 exports.toEdgeHash = toEdgeHash;
 exports.toAdjacencyList = toAdjacencyList;
@@ -163,9 +163,11 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
         }
         const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
         const proposed_distance = dist[current] + segment_distance;
-        if (proposed_distance < (dist[node] || Infinity)) {
+        // excessive check necessary to distinguish undefined from 0
+        // (dist[node] can on rare circumstances be 'start')
+        if (proposed_distance < (dist[node] === undefined ? Infinity : 0)) {
           if (dist[node] !== undefined) {
-            heap.decreaseKey(key_to_nodes[node], proposed_distance);
+              heap.decreaseKey(key_to_nodes[node], proposed_distance);
           } else {
             key_to_nodes[node] = heap.insert(proposed_distance, node);
           }
@@ -200,7 +202,14 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
    fs.writeFile('./single_dijkstra.geojson', JSON.stringify(route), 'utf8');
   }
 
-  return route;
+  const segments = route.features.map(f=> f.properties.ID);
+  const distance = route.features.reduce((acc, feat)=> {
+    return acc + feat.properties[cost_field];
+  }, 0);
+
+  segments.sort((a,b)=> a-b);
+
+  return {distance, segments};
 }
 
 function toBestRoute(end_pt, prev, edge_hash) {
