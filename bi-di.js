@@ -2,6 +2,7 @@
 const fs = require('fs').promises;
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
 const toBestRoute = require('./index.js').toBestRoute;
+const getComparator = require('./index.js').getComparator;
 
 const debug = false;
 const save_output = false;
@@ -56,6 +57,19 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
     fs.writeFile('./orig_path2.geojson', JSON.stringify(geojson_backward), 'utf8');
   }
 
+  const geojson_combined = [...geojson_forward.features, ...geojson_backward.features];
+  const segments = geojson_combined.map(f=>f.properties.ID);
+  const distance = geojson_combined.reduce((acc, feat)=> {
+    return acc + feat.properties[cost_field];
+  }, 0);
+
+  segments.sort((a,b)=> a-b);
+
+  const route = {
+    "type": "FeatureCollection",
+    "features": geojson_combined
+  };
+  return {distance, segments, route};
 }
 
 function* doDijkstra(graph, edge_hash, ref, current, cost_field, direction) {
@@ -82,7 +96,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, direction) {
       }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
-      if (proposed_distance < (ref.dist[node] || Infinity)) {
+      if (proposed_distance < getComparator(ref.dist[node])) {
         if(ref.dist[node] !== undefined) {
           heap.decreaseKey(key_to_nodes[node], proposed_distance);
         } else {

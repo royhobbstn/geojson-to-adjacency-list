@@ -10,6 +10,7 @@ exports.toAdjacencyList = toAdjacencyList;
 exports.connectedComponents = connectedComponents;
 exports.runDijkstra = runDijkstra;
 exports.toBestRoute = toBestRoute;
+exports.getComparator = getComparator;
 
 function toAdjacencyList(geo) {
 
@@ -158,14 +159,13 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
         return node !== vertex;
       })
       .forEach(node => {
+        // maybe not necessary?
         if(visited[node]) {
           return;
         }
         const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
         const proposed_distance = dist[current] + segment_distance;
-        // excessive check necessary to distinguish undefined from 0
-        // (dist[node] can on rare circumstances be 'start')
-        if (proposed_distance < (dist[node] === undefined ? Infinity : 0)) {
+        if (proposed_distance < getComparator(dist[node])) {
           if (dist[node] !== undefined) {
               heap.decreaseKey(key_to_nodes[node], proposed_distance);
           } else {
@@ -209,7 +209,7 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
 
   segments.sort((a,b)=> a-b);
 
-  return {distance, segments};
+  return {distance, segments, route};
 }
 
 function toBestRoute(end_pt, prev, edge_hash) {
@@ -226,4 +226,17 @@ function toBestRoute(end_pt, prev, edge_hash) {
     "features": features
   };
 
+}
+
+function getComparator(dist_node){
+  // excessive check necessary to distinguish undefined from 0
+  // (dist[node] can on rare circumstances be 'start')
+  if(dist_node === 0) {
+    return 0;
+  }
+  if(dist_node === undefined){
+    return Infinity;
+  }
+
+  return dist_node;
 }
