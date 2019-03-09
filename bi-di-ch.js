@@ -3,6 +3,7 @@ const fs = require('fs');
 const toBestRoute = require('./index.js').toBestRoute;
 const getComparator = require('./index.js').getComparator;
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
+const getShortestPath = require('./index.js').getShortestPath;
 
 const debug = false;
 const save_output = false;
@@ -47,13 +48,12 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       }
     }
 
-  } while (!forward.dist[sb.value]);
-  // } while (!forward.visited[sb.value]);
+  } while (!forward.visited[sb.value] && !backward.visited[sf.value]);
 
-  const latest = sb.value;
+  const shortest_common_node = getShortestPath(start, forward.dist, forward.prev, forward.visited, end, backward.dist, backward.prev, backward.visited);
 
-  const geojson_forward = toBestRoute(latest, forward.prev, edge_hash);
-  const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
+  const geojson_forward = toBestRoute(shortest_common_node, forward.prev, edge_hash);
+  const geojson_backward = toBestRoute(shortest_common_node, backward.prev, edge_hash);
 
   if(save_output) {
     console.log('forward');
@@ -141,15 +141,16 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       if(debug){
         console.log({node_rank: node_rank[node], current_rank});
       }
+      // todo below?
       if(ref.visited[node]) {
         return;
       }
-      if(node_rank[node] < current_rank) {
-        if(debug){
-          console.log('reject', node);
-        }
-        return;
-      }
+      // if(node_rank[node] < current_rank) {
+      //   if(debug){
+      //     console.log('reject', node);
+      //   }
+      //   return;
+      // }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
       if (proposed_distance < getComparator(ref.dist[node])) {

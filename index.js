@@ -11,6 +11,7 @@ exports.connectedComponents = connectedComponents;
 exports.runDijkstra = runDijkstra;
 exports.toBestRoute = toBestRoute;
 exports.getComparator = getComparator;
+exports.getShortestPath = getShortestPath;
 
 function toAdjacencyList(geo) {
 
@@ -21,6 +22,14 @@ function toAdjacencyList(geo) {
   features.forEach(feature => {
     const coordinates = feature.geometry.coordinates;
     if (!coordinates) {
+      return;
+    }
+    if(!feature.properties) {
+      console.log('no features adj');
+      return;
+    }
+    if(!feature.properties.MILES) {
+      console.log('NO MILES adj');
       return;
     }
     const start_vertex = coordinates[0].join(',');
@@ -52,7 +61,11 @@ function toEdgeHash(geo) {
   features.forEach(feature => {
     const coordinates = feature.geometry.coordinates;
     if (!coordinates) {
+      console.log("No Coords eh");
       return;
+    }
+    if(!feature.properties.MILES) {
+      console.log("NO MILES eh")
     }
     const start_vertex = coordinates[0].join(',');
     const end_vertex = coordinates[coordinates.length - 1].join(',');
@@ -164,6 +177,12 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
           return;
         }
         const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
+        if(!segment_distance){
+          console.log('aggggg Dijkstra');
+          console.log(edge_hash[`${current}|${node}`]);
+          console.log(current, node);
+          process.exit();
+        }
         const proposed_distance = dist[current] + segment_distance;
         if (proposed_distance < getComparator(dist[node])) {
           if (dist[node] !== undefined) {
@@ -239,4 +258,21 @@ function getComparator(dist_node){
   }
 
   return dist_node;
+}
+
+
+function getShortestPath(start, forward_dist, forward_prev, forward_visited, end, backward_dist, backward_prev, backward_visited) {
+  let distance = Infinity;
+  let bestNode = null;
+
+  let processedNodes = new Set([...Object.keys(forward_visited), ...Object.keys(backward_visited)]);
+  processedNodes.forEach(u=> {
+    const dist = forward_dist[u] + backward_dist[u];
+    if(dist < distance) {
+      bestNode = u;
+      distance = dist;
+    }
+  });
+
+  return bestNode;
 }

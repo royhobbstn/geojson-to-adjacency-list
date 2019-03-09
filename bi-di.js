@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
 const toBestRoute = require('./index.js').toBestRoute;
 const getComparator = require('./index.js').getComparator;
+const getShortestPath = require('./index.js').getShortestPath;
 
 const debug = false;
 const save_output = false;
@@ -11,8 +12,6 @@ exports.runBiDijkstra = runBiDijkstra;
 
 
 function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
-
-  // TODO this is not guaranteed to be an optimal solution (yet)
 
   const forward = {};
   const backward = {};
@@ -37,11 +36,12 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
       }
     }
 
-  } while (!forward.visited[sb.value]);
+  } while (!forward.visited[sb.value] && !backward.visited[sf.value]);
 
-  const latest = sb.value;
-  const geojson_forward = toBestRoute(latest, forward.prev, edge_hash);
-  const geojson_backward = toBestRoute(latest, backward.prev, edge_hash);
+  const shortest_common_node = getShortestPath(start, forward.dist, forward.prev, forward.visited, end, backward.dist, backward.prev, backward.visited);
+
+  const geojson_forward = toBestRoute(shortest_common_node, forward.prev, edge_hash);
+  const geojson_backward = toBestRoute(shortest_common_node, backward.prev, edge_hash);
 
   if(save_output) {
     console.log('forward');
@@ -91,9 +91,10 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, direction) {
     }
 
     graph[current].forEach(node => {
-      if(ref.visited[node]) {
-        return;
-      }
+      // TODO It is faster.  Is it correct?
+      // if(ref.visited[node]) {
+      //   return;
+      // }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
       if (proposed_distance < getComparator(ref.dist[node])) {
@@ -131,3 +132,4 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, direction) {
 
   } while (true)
 }
+
