@@ -6,7 +6,8 @@ const links = [];
 
 // TODO ArcFlags?
 
-const BinaryHeap = require('./bh.js').BinaryHeap;
+const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
+
 const {toAdjacencyList, toEdgeHash, runDijkstra} = require('./index.js');
 
 exports.contractGraph = contractGraph;
@@ -17,8 +18,12 @@ function contractGraph(geojson, options) {
 
   const adjacency_list = toAdjacencyList(geojson);
   const edge_hash = toEdgeHash(geojson);
-  const bh = new BinaryHeap();
-  const ih = new BinaryHeap();
+  const bh = new FibonacciHeap();
+  const key_to_nodes = {};
+
+  const ih = new FibonacciHeap();
+  const key_to_nodes_extra = {};
+
 
   const contracted_nodes = {};
 
@@ -29,13 +34,14 @@ function contractGraph(geojson, options) {
     const score = getVertexScore(vertex);
     bh.push({key: vertex, value: score});
     ih.push({key: vertex, value: score});
-
+    key_to_nodes[node] = bh.insert(score, node);
+    key_to_nodes_extra[node] = ih.insert(score, node);
   });
 
   const ordered = [];
 
   while(ih.length() > 0) {
-    const item = ih.pop();
+    const item = ih.extractMinimum();
     // console.log(item);
     ordered.push(item);
   }

@@ -13,6 +13,13 @@ exports.runBiDijkstra = runBiDijkstra;
 
 function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
 
+  if(start === end) {
+    return {distance: 0, segments: [], route: {
+      "type": "FeatureCollection",
+        "features": []
+    }};
+  }
+
   const forward = {};
   const backward = {};
 

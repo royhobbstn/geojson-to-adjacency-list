@@ -16,7 +16,6 @@ const new_adj = require('./ch.json');
 const new_edge = require('./ne.json');
 const node_rank = require('./nr.json');
 
-
 main();
 
 async function main() {
@@ -58,27 +57,15 @@ async function main() {
   const correct2 = [];
   const nodeDijkstra = new Graph(alt_graph);
 
-
-  let timer = null;
-
   coords.forEach((pair, index) => {
 
-    timer = setTimeout(function (){
-      console.log(`stalled progress on ${pair}`);
-      process.exit();
-    }, 10000);
-
-    process.stdout.write('Processing ' + ((index/coords.length)*100).toFixed(2) + '% complete... \r');
+    process.stdout.write('Processing ' + ((index/coords.length)*100).toFixed(2) + '% complete... ' + index + '  ' + pair + '                 \r');
 
     dijkstra[index] = runDijkstra(adjacency, edge_list, pair[0], pair[1], 'MILES');
     bidirectional[index] = biDiPlain(adjacency, edge_list, pair[0], pair[1], 'MILES');
     ch[index] = runBiDijkstra(new_adj, new_edge, pair[0], pair[1], 'MILES', node_rank, id_list);
     correct[index] = toCorrectPath(alt_graph, edge_list, pair[0], pair[1], 'MILES');
     correct2[index] = toCorrectPath2(nodeDijkstra, edge_list, pair[0], pair[1], 'MILES');
-
-    if(timer) {
-      clearTimeout(timer)
-    }
   });
 
 
@@ -151,7 +138,9 @@ function toCorrectPath(graph, edge_list, start, end, cost_field) {
   const geojson_features = [];
   let distance = 0;
   const segments = [];
-  path.forEach((node, i) => {
+
+  if(start !== end) {
+    path.forEach((node, i) => {
       if(!path[i+1]) {
         return;
       }
@@ -163,7 +152,8 @@ function toCorrectPath(graph, edge_list, start, end, cost_field) {
       geojson_features.push(feature);
       distance += feature.properties[cost_field];
       segments.push(feature.properties.ID);
-  });
+    });
+  }
 
   const route = {
     "type": "FeatureCollection",
@@ -180,19 +170,22 @@ function toCorrectPath2(graph, edge_list, start, end, cost_field) {
   const geojson_features = [];
   let distance = 0;
   const segments = [];
-  path.forEach((node, i) => {
-    if(!path[i+1]) {
-      return;
-    }
-    const feature = edge_list[`${node}|${path[i+1]}`];
-    if(!feature) {
-      console.log('ERROR: No edge feature found');
-      return;
-    }
-    geojson_features.push(feature);
-    distance += feature.properties[cost_field];
-    segments.push(feature.properties.ID);
-  });
+
+  if(start !== end) {
+    path.forEach((node, i) => {
+      if(!path[i+1]) {
+        return;
+      }
+      const feature = edge_list[`${node}|${path[i+1]}`];
+      if(!feature) {
+        console.log('ERROR: No edge feature found');
+        return;
+      }
+      geojson_features.push(feature);
+      distance += feature.properties[cost_field];
+      segments.push(feature.properties.ID);
+    });
+  }
 
   const route = {
     "type": "FeatureCollection",

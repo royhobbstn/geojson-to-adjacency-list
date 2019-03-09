@@ -23,7 +23,13 @@ function toIdList(geojson) {
 
 function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, id_list) {
 
-  // TODO this is not guaranteed to be an optimal solution (yet)
+
+  if(start === end) {
+    return {distance: 0, segments: [], route: {
+        "type": "FeatureCollection",
+        "features": []
+      }};
+  }
 
   const forward = {};
   const backward = {};
