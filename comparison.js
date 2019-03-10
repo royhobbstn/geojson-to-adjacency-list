@@ -16,6 +16,7 @@ const new_adj = require('./ch.json');
 const new_edge = require('./ne.json');
 const node_rank = require('./nr.json');
 
+
 main();
 
 async function main() {
@@ -27,10 +28,15 @@ async function main() {
   geojson.features = geojson.features.filter(feat => {
     if (feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 || feat.properties.STFIPS === 53) {
       if(feat.properties.MILES && feat.geometry.coordinates) {
-        return true;
+        if(feat.properties.ID !== 477) {
+          // TODO deal with this in network cleanup
+          return true;
+        }
       }
     }
   });
+
+  await fs.writeFile('./pacific.geojson', JSON.stringify(geojson), 'utf8');
 
   const alt_graph = createDijkstraJsGraph(geojson, 'MILES');
 
@@ -43,10 +49,11 @@ async function main() {
 
   const coords = [];
 
-  for(let i = 0; i < 99999; i++) {
+  for(let i = 0; i < 999; i++) {
     const rnd1 = Math.floor(Math.random() * adj_length);
     const rnd2 = Math.floor(Math.random() * adj_length);
     const coord = [adj_keys[rnd1], adj_keys[rnd2]];
+    // const coord = ['-117.923487,45.02645', '-117.240219,32.672428'];
     coords.push(coord);
   }
 
@@ -68,6 +75,8 @@ async function main() {
     correct2[index] = toCorrectPath2(nodeDijkstra, edge_list, pair[0], pair[1], 'MILES');
   });
 
+  console.log(`index`,`Dijkstra`,`BiDirectional`,`ContractionHierarchy`);
+
 
   let error_count = 0;
   for(let i=0; i<coords.length; i++) {
@@ -87,12 +96,13 @@ async function main() {
 
     if((max-min) > 0.000001) {
       error_count++;
-      console.log(`index`,`Dijkstra`,`BiDirectional`,`ContractionHierarchy`);
       console.log(i,coords[i], dijkstra[i].segments.length,dijkstra[i].distance.toFixed(5),bidirectional[i].segments.length,bidirectional[i].distance.toFixed(5),ch[i].segments.length,ch[i].distance.toFixed(5),correct[i].segments.length,correct[i].distance.toFixed(5),correct2[i].segments.length,correct2[i].distance.toFixed(5));
     }
   }
   console.log(`There were ${error_count} errors.`);
 
+  console.log(ch[0].segments);
+  console.log(correct2[0].segments);
 
   // fs.writeFile('./comparison_dijkstra.geojson', JSON.stringify(dijkstra[0].route));
   // fs.writeFile('./comparison_bidirectional.geojson', JSON.stringify(bidirectional[0].route));

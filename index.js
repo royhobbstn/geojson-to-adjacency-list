@@ -169,6 +169,7 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
   do {
     adj_list[current]
       .filter(node => {
+        // maybe not necessary?
         return node !== vertex;
       })
       .forEach(node => {

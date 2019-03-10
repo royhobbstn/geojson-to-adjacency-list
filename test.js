@@ -6,7 +6,6 @@ const new_edge = require('./ne.json');
 const node_rank = require('./nr.json');
 
 const {toAdjacencyList, toEdgeHash, runDijkstra} = require('./index.js');
-// const {contractGraph} = require('./contraction_hierarchy.js');
 
 main();
 
@@ -18,7 +17,9 @@ async function main() {
 
   geojson.features = geojson.features.filter(feat => {
     if (feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 || feat.properties.STFIPS === 53) {
-      return true;
+      if(feat.properties.MILES && feat.geometry.coordinates) {
+        return true;
+      }
     }
   });
 

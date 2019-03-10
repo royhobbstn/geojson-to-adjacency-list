@@ -32,17 +32,14 @@ function contractGraph(geojson, options) {
   Object.keys(adjacency_list).forEach((vertex,i) => {
     console.log(i/clen);
     const score = getVertexScore(vertex);
-    bh.push({key: vertex, value: score});
-    ih.push({key: vertex, value: score});
-    key_to_nodes[node] = bh.insert(score, node);
-    key_to_nodes_extra[node] = ih.insert(score, node);
+    key_to_nodes[vertex] = bh.insert(score, vertex);
+    key_to_nodes_extra[vertex] = ih.insert(score, vertex);
   });
 
   const ordered = [];
 
-  while(ih.length() > 0) {
+  while(ih.size() > 0) {
     const item = ih.extractMinimum();
-    // console.log(item);
     ordered.push(item);
   }
 
@@ -51,12 +48,12 @@ function contractGraph(geojson, options) {
       "type": "Feature",
       "properties": {
         "rank": index + 1,
-        "coords": element.key,
-        "score": element.value
+        "coords": element.value,
+        "score": element.key
       },
       "geometry": {
         "type": "Point",
-        "coordinates": element.key.split(',').map(k => Number(k))
+        "coordinates": element.value.split(',').map(k => Number(k))
       }
     };
   });
@@ -87,29 +84,34 @@ function contractGraph(geojson, options) {
   let contraction_level = 1;
 
   // main contraction loop
-  while (bh.length() > 0) {
+  while (bh.size() > 0) {
 
-    console.log(bh.length());
+    console.log(bh.size());
 
     // recompute to make sure that first node in priority queue
-    // is still best canditate to contract
+    // is still best candidate to contract
     let found_lowest = false;
-    let node_obj = bh.peek();
+    let node_obj = bh.findMinimum();
+    const old_score = node_obj.key;
     do {
-      const first_vertex = node_obj.key;
-      const score = getVertexScore(first_vertex);
-      bh.decrease_key(first_vertex, score);
-      node_obj = bh.peek();
-      if (node_obj.key === first_vertex) {
+      const first_vertex = node_obj.value;
+      const new_score = getVertexScore(first_vertex);
+      if(new_score > old_score) {
+        // insertKey equivalent.  (remove and insert)
+        bh.delete(node_obj);
+        key_to_nodes[first_vertex] = bh.insert(new_score, first_vertex);
+      }
+      node_obj = key_to_nodes[first_vertex];
+      if (node_obj.value === first_vertex) {
         found_lowest = true;
       }
     } while (found_lowest === false);
 
     // lowest found, pop it off the queue and contract it
-    const v = bh.pop();
-    contract(v.key, false);
+    const v = bh.extractMinimum();
+    contract(v.value, false);
     // keep a record of contraction level of each node
-    contracted_nodes[v.key] = contraction_level;
+    contracted_nodes[v.value] = contraction_level;
     contraction_level++;
   }
 
@@ -189,10 +191,8 @@ function contractGraph(geojson, options) {
 
       // get dijkstra shortest path distance for u to w
       const path = runDijkstra(adjacency_list, edge_hash, u, w, cost_field, v);
-      const dijkstra = path.features.length ? path.features.reduce((acc, feature) => {
-        return acc + feature.properties[cost_field];
-      }, 0) : Infinity;
-
+      const dijkstra = path.distance || Infinity;
+      // Infinity does happen - what are the consequences
       if (!get_count_only && debug) {
         console.log({u, w, v});
         console.log({path});
