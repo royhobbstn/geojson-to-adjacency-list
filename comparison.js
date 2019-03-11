@@ -60,11 +60,11 @@ async function main() {
 
   const coords = [];
 
-  for(let i = 0; i < 100; i++) {
+  for(let i = 0; i < 9999; i++) {
     const rnd1 = Math.floor(Math.random() * adj_length);
     const rnd2 = Math.floor(Math.random() * adj_length);
     const coord = [adj_keys[rnd1], adj_keys[rnd2]];
-    // const coord = [ '-120.522265,46.635179', '-120.517947,46.671029' ];
+    // const coord = [  '-120.604121,46.571019', '-120.50738,46.604559' ];
     coords.push(coord);
   }
 
@@ -112,8 +112,8 @@ async function main() {
   }
   console.log(`There were ${error_count} errors.`);
 
-  console.log(ch[0].segments);
-  console.log(correct2[0].segments);
+  // console.log(ch[0].segments);
+  // console.log(correct2[0].segments);
 
   fs.writeFile('./comparison_dijkstra.geojson', JSON.stringify(dijkstra[0].route));
   fs.writeFile('./comparison_bidirectional.geojson', JSON.stringify(bidirectional[0].route));

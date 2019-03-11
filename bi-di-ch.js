@@ -54,7 +54,7 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       }
     }
 
-  } while (!forward_done && !backward_done);
+  } while (!(forward_done && backward_done));
 
   const shortest_common_node = getShortestPath(start, forward.dist, forward.prev, forward.visited, end, backward.dist, backward.prev, backward.visited);
 
@@ -126,20 +126,17 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
 
     if(debug) {
       console.log('');
-      console.log('starting new loop');
-      console.log({direction});
+      console.log('');
+      console.log(`starting new ${direction.toUpperCase()} loop`);
       console.log({current, current_rank});
       console.time('bi-di-ch');
-      console.log('edges', graph[current].length);
+      console.log('edge count:', graph[current].length);
       console.log('for each edge from current node:');
+      console.log('');
     }
 
 
     graph[current].forEach(node => {
-      if(debug){
-        console.log('processing edge:');
-        console.log({node, node_rank: node_rank[node], current_rank});
-      }
       // todo below?
       // if(ref.visited[node]) {
       //   return;
@@ -147,10 +144,14 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       // console.log(node_rank[node], current_rank, direction);
       if(node_rank[node] < current_rank) {
         if(debug){
-          console.log('edge is downward sloping');
-          console.log('reject', {node});
+          // console.log('edge is downward sloping');
+          // console.log('reject', {node});
         }
         return;
+      } else {
+        if(debug){
+          console.log('processing edge:', {node, current_rank, node_rank: node_rank[node]});
+        }
       }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
@@ -164,6 +165,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       if (proposed_distance < getComparator(ref.dist[node])) {
         if(debug) {
           console.log('the new route is smaller!');
+          console.log('');
         }
         if(ref.dist[node] !== undefined) {
           heap.decreaseKey(key_to_nodes[node], proposed_distance);
@@ -175,6 +177,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
       } else {
         if(debug){
           console.log('but the new route was not smaller');
+          console.log('');
         }
       }
     });
@@ -186,7 +189,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     if(elem) {
       current = elem.value;
       if(debug) {
-        console.log(direction, elem.key, elem.value);
+        console.log(`next on heap,   key: ${elem.key}  value: ${elem.value}  rank: ${node_rank[elem.value]}`);
       }
     } else {
       current = '';
@@ -196,6 +199,7 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     if(debug) {
       console.log('end of loop');
       console.log('heap size', heap.size());
+      // console.log(`nodes in heap: ${heapNodes(heap, node_rank)}`);
       console.timeEnd('bi-di-ch');
       console.log('------');
     }
@@ -203,5 +207,10 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     yield current
 
   } while (true);
+
+}
+
+
+function heapNodes(heap, node_rank) {
 
 }
