@@ -54,25 +54,14 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       }
     }
 
-  } while (!forward.visited[sb.value] && !backward.visited[sf.value]);
+  } while (!forward_done && !backward_done);
 
   const shortest_common_node = getShortestPath(start, forward.dist, forward.prev, forward.visited, end, backward.dist, backward.prev, backward.visited);
 
   const geojson_forward = toBestRoute(shortest_common_node, forward.prev, edge_hash);
   const geojson_backward = toBestRoute(shortest_common_node, backward.prev, edge_hash);
 
-  if(save_output) {
-    console.log('forward');
-    geojson_forward.features.forEach(g=> {
-      console.log(g.properties.ID, g.properties[cost_field]);
-    });
-    console.log('backward');
-    geojson_backward.features.forEach(g=> {
-      console.log(g.properties.ID, g.properties[cost_field]);
-    });
-
-    console.log('forward');
-    const ff = geojson_forward.features.reduce((acc, g) => {
+   const ff = geojson_forward.features.reduce((acc, g) => {
       const id = g.properties.ID;
       if(typeof id === "string") {
         const nums = id.split(',');
@@ -83,7 +72,6 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       return acc;
     }, []);
 
-    console.log('backward');
     const bb = geojson_backward.features.reduce((acc, g) => {
       const id = g.properties.ID;
       if(typeof id === "string") {
@@ -105,11 +93,10 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
       "features": bb.map(d=>id_list[d])
     };
 
-    fs.writeFileSync('./path1.geojson', JSON.stringify(fc), 'utf8');
-    fs.writeFileSync('./path2.geojson', JSON.stringify(bc), 'utf8');
-  }
+    // fs.writeFileSync('./path1.geojson', JSON.stringify(fc), 'utf8');
+    // fs.writeFileSync('./path2.geojson', JSON.stringify(bc), 'utf8');
 
-  const geojson_combined = [...geojson_forward.features, ...geojson_backward.features];
+  const geojson_combined = [...fc.features, ...bc.features];
   const segments = geojson_combined.map(f=>f.properties.ID);
   const distance = geojson_combined.reduce((acc, feat)=> {
     return acc + feat.properties[cost_field];
@@ -138,28 +125,46 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     const current_rank = node_rank[current];
 
     if(debug) {
-      console.log(direction);
-      console.log({current});
+      console.log('');
+      console.log('starting new loop');
+      console.log({direction});
+      console.log({current, current_rank});
       console.time('bi-di-ch');
+      console.log('edges', graph[current].length);
+      console.log('for each edge from current node:');
     }
+
 
     graph[current].forEach(node => {
       if(debug){
-        console.log({node_rank: node_rank[node], current_rank});
+        console.log('processing edge:');
+        console.log({node, node_rank: node_rank[node], current_rank});
       }
       // todo below?
-      if(ref.visited[node]) {
-        return;
-      }
-      // if(node_rank[node] < current_rank) {
-      //   if(debug){
-      //     console.log('reject', node);
-      //   }
+      // if(ref.visited[node]) {
       //   return;
       // }
+      // console.log(node_rank[node], current_rank, direction);
+      if(node_rank[node] < current_rank) {
+        if(debug){
+          console.log('edge is downward sloping');
+          console.log('reject', {node});
+        }
+        return;
+      }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
+      if(debug){
+        console.log('the distance to the current node is: ', ref.dist[current]);
+        console.log(`edge has an id of: ${edge_hash[`${current}|${node}`].properties.ID}`);
+        console.log('edge has cost of :', {segment_distance});
+        console.log('so the distance to the end of the edge would be:', {proposed_distance});
+        console.log('the current estimated distance to the end of the edge via another path is: ', ref.dist[node]);
+      }
       if (proposed_distance < getComparator(ref.dist[node])) {
+        if(debug) {
+          console.log('the new route is smaller!');
+        }
         if(ref.dist[node] !== undefined) {
           heap.decreaseKey(key_to_nodes[node], proposed_distance);
         } else {
@@ -167,25 +172,30 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
         }
         ref.dist[node] = proposed_distance;
         ref.prev[node] = current;
+      } else {
+        if(debug){
+          console.log('but the new route was not smaller');
+        }
       }
     });
     ref.visited[current] = true;
 
     // get lowest value from heaps
     const elem = heap.extractMinimum();
-    if(debug) {
-      console.log(direction, elem);
-    }
+
     if(elem) {
       current = elem.value;
+      if(debug) {
+        console.log(direction, elem.key, elem.value);
+      }
     } else {
       current = '';
       return '';
     }
 
     if(debug) {
+      console.log('end of loop');
       console.log('heap size', heap.size());
-      console.log('edges', graph[current].length);
       console.timeEnd('bi-di-ch');
       console.log('------');
     }

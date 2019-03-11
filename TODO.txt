@@ -9,15 +9,17 @@ THIS IS a circular loop, ID 477 that causes the problems.  being counted twice. 
 in original it is two separate segments.
 create a rule where contraction hierarchy can't make a segment where the start and end are the same coordinate
 
-1185 [ '-118.20678,33.767089', '-117.240219,32.672428' ] 52 '107.85895' 52 '107.85895' 10 '108.26843' 52 '107.85895' 52 '107.85895'
-same
 
-i think these are all the same problem
-2215 [ '-117.923487,45.02645', '-117.240219,32.672428' ] 131 '1152.42964' 131 '1152.42964' 32 '1152.83912' 131 '1152.42964' 131 '1152.42964'
-3181 [ '-122.486158,48.776328', '-117.240219,32.672428' ] 580 '1356.76368' 580 '1356.76368' 159 '1357.17316' 580 '1356.76368' 580 '1356.76368'
-4573 [ '-118.583787,36.794178', '-121.913673,37.31528' ] 49 '238.32721' 49 '238.32721' 17 '238.88465' 49 '238.32721' 49 '238.32721'
+ch stalled
 
-
+-119.873486,46.253477,-120.329041,46.374961
+-119.874801,46.517738,-120.314385,46.417408
+-119.874191,46.536007,-119.874641,46.52354
+-119.978829,46.312754,-120.574253,46.041448
 -------------
 
 then turn on finding only higher path... see where it is going wrong
+
+theory is either witness paths bad
+
+or stopping condition is wrong
