@@ -170,10 +170,11 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
     adj_list[current]
       .filter(node => {
         // maybe not necessary?
+        // this is a modification for contraction hierarchy.  otherwise vertex===undefined
         return node !== vertex;
       })
       .forEach(node => {
-        // maybe not necessary?
+        // this optimization may not hold true for directed graphs
         if(visited[node]) {
           return;
         }

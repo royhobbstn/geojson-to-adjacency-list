@@ -98,10 +98,10 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, direction) {
     }
 
     graph[current].forEach(node => {
-      // TODO It is faster.  Is it correct?
-      // if(ref.visited[node]) {
-      //   return;
-      // }
+      // this optimization may not hold true for directed graphs
+      if(ref.visited[node]) {
+        return;
+      }
       const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
       const proposed_distance = ref.dist[current] + segment_distance;
       if (proposed_distance < getComparator(ref.dist[node])) {

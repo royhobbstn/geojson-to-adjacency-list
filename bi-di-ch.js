@@ -96,6 +96,8 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
     // fs.writeFileSync('./path1.geojson', JSON.stringify(fc), 'utf8');
     // fs.writeFileSync('./path2.geojson', JSON.stringify(bc), 'utf8');
 
+  const raw_combined = [...geojson_forward.features, ...geojson_backward.features];
+  const raw_segments = raw_combined.map(f=>f.properties.ID);
   const geojson_combined = [...fc.features, ...bc.features];
   const segments = geojson_combined.map(f=>f.properties.ID);
   const distance = geojson_combined.reduce((acc, feat)=> {
@@ -108,7 +110,7 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field, node_rank, i
     "type": "FeatureCollection",
     "features": geojson_combined
   };
-  return {distance, segments, route};
+  return {distance, segments, route, raw_segments};
 }
 
 function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, direction) {
@@ -137,12 +139,9 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
 
 
     graph[current].forEach(node => {
-      // todo below?
-      // if(ref.visited[node]) {
-      //   return;
-      // }
-      // console.log(node_rank[node], current_rank, direction);
       if(node_rank[node] < current_rank) {
+        console.log('aahh')
+        // todo most likely no longer necessary (maybe only for bidirectional)
         if(debug){
           // console.log('edge is downward sloping');
           // console.log('reject', {node});
@@ -199,7 +198,6 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     if(debug) {
       console.log('end of loop');
       console.log('heap size', heap.size());
-      // console.log(`nodes in heap: ${heapNodes(heap, node_rank)}`);
       console.timeEnd('bi-di-ch');
       console.log('------');
     }
@@ -207,10 +205,5 @@ function* doDijkstra(graph, edge_hash, ref, current, cost_field, node_rank, dire
     yield current
 
   } while (true);
-
-}
-
-
-function heapNodes(heap, node_rank) {
 
 }

@@ -18,7 +18,10 @@ async function main() {
   geojson.features = geojson.features.filter(feat => {
     if (feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 || feat.properties.STFIPS === 53) {
       if(feat.properties.MILES && feat.geometry.coordinates) {
-        return true;
+        if(feat.properties.ID !== 477) {
+          // TODO deal with this in network cleanup
+          return true;
+        }
       }
     }
   });
@@ -34,36 +37,36 @@ async function main() {
     const adj_keys = Object.keys(adjacency);
     const adj_length = adj_keys.length;
 
-    // console.time('Dijkstra');
-    // for (let i = 0; i < 1000; i++) {
-    //   let rnd1 = Math.floor(Math.random() * adj_length);
-    //   let rnd2 = Math.floor(Math.random() * adj_length);
-    //   console.time('test: ' + i);
-    //   console.log(adj_keys[rnd1], adj_keys[rnd2]);
-    //   const test = runDijkstra(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
-    //   console.timeEnd('test: ' + i);
-    // }
-    // console.timeEnd('Dijkstra');
-
-    console.time('BiDijkstra');
+    console.time('Dijkstra');
     for (let i = 0; i < 1000; i++) {
       let rnd1 = Math.floor(Math.random() * adj_length);
       let rnd2 = Math.floor(Math.random() * adj_length);
-      console.time('test: ' + i);
-      console.log(adj_keys[rnd1], adj_keys[rnd2]);
-      const test = biDiPlain(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
-      console.timeEnd('test: ' + i);
+      // console.time('test: ' + i);
+      // console.log(adj_keys[rnd1], adj_keys[rnd2]);
+      const test = runDijkstra(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
+      // console.timeEnd('test: ' + i);
     }
-    console.timeEnd('BiDijkstra');
-
-    // console.time('ContractionHierarchy');
+    console.timeEnd('Dijkstra');
+    //
+    // console.time('BiDijkstra');
     // for (let i = 0; i < 1000; i++) {
     //   let rnd1 = Math.floor(Math.random() * adj_length);
     //   let rnd2 = Math.floor(Math.random() * adj_length);
-    //   console.time('test: ' + i);
-    //   console.log(adj_keys[rnd1], adj_keys[rnd2]);
+    //   // console.time('test: ' + i);
+    //   // console.log(adj_keys[rnd1], adj_keys[rnd2]);
+    //   const test = biDiPlain(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
+    //   // console.timeEnd('test: ' + i);
+    // }
+    // console.timeEnd('BiDijkstra');
+
+    // console.time('ContractionHierarchy');
+    // for (let i = 0; i < 10000; i++) {
+    //   let rnd1 = Math.floor(Math.random() * adj_length);
+    //   let rnd2 = Math.floor(Math.random() * adj_length);
+    //   // console.time('test: ' + i);
+    //   // console.log(adj_keys[rnd1], adj_keys[rnd2]);
     //   const test = runBiDijkstra(new_adj, new_edge, adj_keys[rnd1], adj_keys[rnd2], 'MILES', node_rank, id_list);
-    //   console.timeEnd('test: ' + i);
+    //   // console.timeEnd('test: ' + i);
     // }
     // console.timeEnd('ContractionHierarchy');
 

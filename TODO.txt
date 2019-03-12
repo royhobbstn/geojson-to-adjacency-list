@@ -1,8 +1,5 @@
 
-
-there are network differences that cause bidirectional normal vs contraction hierarchy bidirectional to be different.
-
-examples:
+This is a big todo:
 
 367 [ '-118.583787,36.794178', '-117.669144,34.06327' ] 98 '292.38698' 98 '292.38699' 34 '292.94442' 98 '292.38699' 98 '292.38699'
 THIS IS a circular loop, ID 477 that causes the problems.  being counted twice.   shouldn't be created at all!
@@ -10,16 +7,11 @@ in original it is two separate segments.
 create a rule where contraction hierarchy can't make a segment where the start and end are the same coordinate
 
 
-ch stalled
+BiDirectional: why so much slower?
+- after: parallel bidijkstra
 
--119.873486,46.253477,-120.329041,46.374961
--119.874801,46.517738,-120.314385,46.417408
--119.874191,46.536007,-119.874641,46.52354
--119.978829,46.312754,-120.574253,46.041448
--------------
+Directed graph options
 
-then turn on finding only higher path... see where it is going wrong
+ArcFlags
 
-theory is either witness paths bad
-
-or stopping condition is wrong
+after: golang

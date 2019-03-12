@@ -2,9 +2,7 @@
 let debug = false;
 
 const fs = require('fs');
-const links = [];
-
-// TODO ArcFlags?
+// const links = [];
 
 const FibonacciHeap = require('@tyriar/fibonacci-heap').FibonacciHeap;
 
@@ -29,42 +27,42 @@ function contractGraph(geojson, options) {
 
   const clen = Object.keys(adjacency_list).length;
   // create an additional node ordering
-  Object.keys(adjacency_list).forEach((vertex,i) => {
-    console.log(i/clen);
+  Object.keys(adjacency_list).forEach((vertex, i) => {
+    console.log(i / clen);
     const score = getVertexScore(vertex);
     key_to_nodes[vertex] = bh.insert(score, vertex);
     key_to_nodes_extra[vertex] = ih.insert(score, vertex);
   });
 
-  const ordered = [];
+  // const ordered = [];
+  //
+  // while(ih.size() > 0) {
+  //   const item = ih.extractMinimum();
+  //   ordered.push(item);
+  // }
 
-  while(ih.size() > 0) {
-    const item = ih.extractMinimum();
-    ordered.push(item);
-  }
-
-  const ifeatures = ordered.map((element, index) => {
-    return {
-      "type": "Feature",
-      "properties": {
-        "rank": index + 1,
-        "coords": element.value,
-        "score": element.key
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": element.value.split(',').map(k => Number(k))
-      }
-    };
-  });
-
-
-  const initial = {
-    "type": "FeatureCollection",
-    "features": ifeatures
-  };
-
-  fs.writeFileSync('./initial_rank.geojson', JSON.stringify(initial), 'utf8');
+  // const ifeatures = ordered.map((element, index) => {
+  //   return {
+  //     "type": "Feature",
+  //     "properties": {
+  //       "rank": index + 1,
+  //       "coords": element.value,
+  //       "score": element.key
+  //     },
+  //     "geometry": {
+  //       "type": "Point",
+  //       "coordinates": element.value.split(',').map(k => Number(k))
+  //     }
+  //   };
+  // });
+  //
+  //
+  // const initial = {
+  //   "type": "FeatureCollection",
+  //   "features": ifeatures
+  // };
+  //
+  // fs.writeFileSync('./initial_rank.geojson', JSON.stringify(initial), 'utf8');
 
   function getVertexScore(v) {
     const shortcut_count = contract(v, true);
@@ -96,7 +94,7 @@ function contractGraph(geojson, options) {
     do {
       const first_vertex = node_obj.value;
       const new_score = getVertexScore(first_vertex);
-      if(new_score > old_score) {
+      if (new_score > old_score) {
         // insertKey equivalent.  (remove and insert)
         bh.delete(node_obj);
         key_to_nodes[first_vertex] = bh.insert(new_score, first_vertex);
@@ -115,34 +113,43 @@ function contractGraph(geojson, options) {
     contraction_level++;
   }
 
-  const viz = {
-    "type": "FeatureCollection",
-    "features": links
-  };
+  // const viz = {
+  //   "type": "FeatureCollection",
+  //   "features": links
+  // };
+  //
+  // fs.writeFileSync('./geohash.geojson', JSON.stringify(viz), 'utf8');
 
-  fs.writeFileSync('./geohash.geojson', JSON.stringify(viz), 'utf8');
+  // const features = Object.keys(contracted_nodes).map(key => {
+  //   return {
+  //     "type": "Feature",
+  //     "properties": {
+  //       "rank": contracted_nodes[key],
+  //       "coords": key,
+  //     },
+  //     "geometry": {
+  //       "type": "Point",
+  //       "coordinates": key.split(',').map(k => Number(k))
+  //     }
+  //   };
+  // });
+  //
+  //
+  // const viz2 = {
+  //   "type": "FeatureCollection",
+  //   "features": features
+  // };
+  //
+  // fs.writeFileSync('./rankspts.geojson', JSON.stringify(viz2), 'utf8');
 
-  const features = Object.keys(contracted_nodes).map(key => {
-    return {
-      "type": "Feature",
-      "properties": {
-        "rank": contracted_nodes[key],
-        "coords": key,
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": key.split(',').map(k => Number(k))
-      }
-    };
+// remove links to lower ranked nodes
+  Object.keys(adjacency_list).forEach(from_coords => {
+    const from_rank = contracted_nodes[from_coords];
+    adjacency_list[from_coords] = adjacency_list[from_coords].filter(to_coords => {
+      const to_rank = contracted_nodes[to_coords];
+      return from_rank < to_rank;
+    });
   });
-
-
-  const viz2 = {
-    "type": "FeatureCollection",
-    "features": features
-  };
-
-  fs.writeFileSync('./rankspts.geojson', JSON.stringify(viz2), 'utf8');
 
   return [adjacency_list, edge_hash, contracted_nodes];
 
@@ -214,20 +221,20 @@ function contractGraph(geojson, options) {
           const seg1_id = edge_hash[`${u}|${v}`].properties.ID;
           const seg2_id = edge_hash[`${v}|${w}`].properties.ID;
 
-          const link = {
-            "type": "Feature",
-            "properties": {
-              "distance": total,
-              "coords1": seg1_id,
-              "coords2": seg2_id,
-            },
-            "geometry": {
-              "type": "LineString",
-              "coordinates": [u.split(',').map(k => Number(k)), w.split(',').map(k => Number(k))]
-            }
-          };
-
-          links.push(link);
+          // const link = {
+          //   "type": "Feature",
+          //   "properties": {
+          //     "distance": total,
+          //     "coords1": seg1_id,
+          //     "coords2": seg2_id,
+          //   },
+          //   "geometry": {
+          //     "type": "LineString",
+          //     "coordinates": [u.split(',').map(k => Number(k)), w.split(',').map(k => Number(k))]
+          //   }
+          // };
+          //
+          // links.push(link);
 
           edge_hash[`${u}|${w}`] = {
             "properties": {
@@ -241,7 +248,6 @@ function contractGraph(geojson, options) {
               [cost_field]: total,
               ID: `${seg1_id},${seg2_id}`
             }
-
           };
 
         }

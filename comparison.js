@@ -25,19 +25,8 @@ async function main() {
   const geojson = JSON.parse(geojson_raw);
 
   // only pacific states
-  // geojson.features = geojson.features.filter(feat => {
-  //   if (feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 || feat.properties.STFIPS === 53) {
-  //     if(feat.properties.MILES && feat.geometry.coordinates) {
-  //       if(feat.properties.ID !== 477) {
-  //         // TODO deal with this in network cleanup
-  //         return true;
-  //       }
-  //     }
-  //   }
-  // });
-
   geojson.features = geojson.features.filter(feat => {
-    if (feat.properties.CTFIPS === 77 && feat.properties.STFIPS === 53) {
+    if (/*feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 ||*/ feat.properties.STFIPS === 53) {
       if(feat.properties.MILES && feat.geometry.coordinates) {
         if(feat.properties.ID !== 477) {
           // TODO deal with this in network cleanup
@@ -46,6 +35,17 @@ async function main() {
       }
     }
   });
+
+  // geojson.features = geojson.features.filter(feat => {
+  //   if (feat.properties.CTFIPS === 77 && feat.properties.STFIPS === 53) {
+  //     if(feat.properties.MILES && feat.geometry.coordinates) {
+  //       if(feat.properties.ID !== 477) {
+  //         // TODO deal with this in network cleanup
+  //         return true;
+  //       }
+  //     }
+  //   }
+  // });
 
   await fs.writeFile('./pacific.geojson', JSON.stringify(geojson), 'utf8');
 
@@ -60,7 +60,7 @@ async function main() {
 
   const coords = [];
 
-  for(let i = 0; i < 9999; i++) {
+  for(let i = 0; i < 1000; i++) {
     const rnd1 = Math.floor(Math.random() * adj_length);
     const rnd2 = Math.floor(Math.random() * adj_length);
     const coord = [adj_keys[rnd1], adj_keys[rnd2]];
@@ -112,14 +112,14 @@ async function main() {
   }
   console.log(`There were ${error_count} errors.`);
 
-  // console.log(ch[0].segments);
+  // console.log(ch[0].raw_segments);
   // console.log(correct2[0].segments);
 
-  fs.writeFile('./comparison_dijkstra.geojson', JSON.stringify(dijkstra[0].route));
-  fs.writeFile('./comparison_bidirectional.geojson', JSON.stringify(bidirectional[0].route));
-  fs.writeFile('./comparison_ch.geojson', JSON.stringify(ch[0].route));
-  fs.writeFile('./comparison_correct.geojson', JSON.stringify(correct[0].route));
-  fs.writeFile('./comparison_correct2.geojson', JSON.stringify(correct2[0].route));
+  // fs.writeFile('./comparison_dijkstra.geojson', JSON.stringify(dijkstra[0].route));
+  // fs.writeFile('./comparison_bidirectional.geojson', JSON.stringify(bidirectional[0].route));
+  // fs.writeFile('./comparison_ch.geojson', JSON.stringify(ch[0].route));
+  // fs.writeFile('./comparison_correct.geojson', JSON.stringify(correct[0].route));
+  // fs.writeFile('./comparison_correct2.geojson', JSON.stringify(correct2[0].route));
 }
 
 
