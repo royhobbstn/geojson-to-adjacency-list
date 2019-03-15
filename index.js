@@ -152,6 +152,14 @@ function rankResults(results) {
 
 function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
 
+  // quick exit for start === end
+  if(start === end) {
+    return {distance: 0, segments: [], route: {
+        "type": "FeatureCollection",
+        "features": []
+      }};
+  }
+
   if(debug) {
     console.log('dij', {start, end, vertex});
   }
@@ -178,17 +186,13 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
         if(visited[node]) {
           return;
         }
+
         const segment_distance = edge_hash[`${current}|${node}`].properties[cost_field];
-        if(!segment_distance){
-          console.log('aggggg Dijkstra');
-          console.log(edge_hash[`${current}|${node}`]);
-          console.log(current, node);
-          process.exit();
-        }
         const proposed_distance = dist[current] + segment_distance;
+
         if (proposed_distance < getComparator(dist[node])) {
           if (dist[node] !== undefined) {
-              heap.decreaseKey(key_to_nodes[node], proposed_distance);
+            heap.decreaseKey(key_to_nodes[node], proposed_distance);
           } else {
             key_to_nodes[node] = heap.insert(proposed_distance, node);
           }
@@ -204,10 +208,12 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
     if(elem) {
       current = elem.value;
     } else {
-      if(debug){
-        console.log('NO PATH!');
-      }
-      current = ''; // no path
+      console.log();
+      console.log();
+      console.log('sdasfasdfasfd')
+      console.log(start, end);
+      process.exit();
+      current = '';
     }
 
     // exit early if current node becomes end node
@@ -217,11 +223,32 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
 
   } while (current);
 
+
   const route = toBestRoute(end, prev, edge_hash);
 
   if(save_output){
    fs.writeFile('./single_dijkstra.geojson', JSON.stringify(route), 'utf8');
+
+    const pm = Object.keys(visited).map(key=> {
+      const split = key.split(',').map(n=> Number(n));
+      return {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+          "type": "Point",
+          "coordinates": split
+        }
+      }
+    });
+
+    const pointmap = {
+      "type": "FeatureCollection",
+      "features": pm
+    };
+
+    fs.writeFile('./dijkstra_radius.geojson', JSON.stringify(pointmap), 'utf8');
   }
+
 
   const segments = route.features.map(f=> f.properties.ID);
   const distance = route.features.reduce((acc, feat)=> {

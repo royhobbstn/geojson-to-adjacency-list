@@ -28,6 +28,9 @@ async function main() {
 
 
   const adjacency = toAdjacencyList(geojson);
+
+  console.log(Object.keys(adjacency).length)
+process.exit()
   const edge_list = toEdgeHash(geojson);
   const id_list = toIdList(geojson);
 
@@ -36,28 +39,31 @@ async function main() {
     // performance test
     const adj_keys = Object.keys(adjacency);
     const adj_length = adj_keys.length;
-
-    console.time('Dijkstra');
-    for (let i = 0; i < 1000; i++) {
-      let rnd1 = Math.floor(Math.random() * adj_length);
-      let rnd2 = Math.floor(Math.random() * adj_length);
-      // console.time('test: ' + i);
-      // console.log(adj_keys[rnd1], adj_keys[rnd2]);
-      const test = runDijkstra(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
-      // console.timeEnd('test: ' + i);
-    }
-    console.timeEnd('Dijkstra');
     //
-    // console.time('BiDijkstra');
-    // for (let i = 0; i < 1000; i++) {
+    // console.time('Dijkstra');
+    // for (let i = 0; i < 1; i++) {
     //   let rnd1 = Math.floor(Math.random() * adj_length);
     //   let rnd2 = Math.floor(Math.random() * adj_length);
-    //   // console.time('test: ' + i);
+    //   console.time('test: ' + i);
     //   // console.log(adj_keys[rnd1], adj_keys[rnd2]);
-    //   const test = biDiPlain(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
-    //   // console.timeEnd('test: ' + i);
+    //   // const test = runDijkstra(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
+    //   const test = runDijkstra(adjacency, edge_list, '-119.726257,36.814331', '-117.534584,47.985595', 'MILES');
+    //   console.timeEnd('test: ' + i);
     // }
-    // console.timeEnd('BiDijkstra');
+    // console.timeEnd('Dijkstra');
+
+    console.time('BiDijkstra');
+    for (let i = 0; i < 1; i++) {
+      let rnd1 = Math.floor(Math.random() * adj_length);
+      let rnd2 = Math.floor(Math.random() * adj_length);
+      console.log();
+      console.time('test: ' + i);
+      // console.log(adj_keys[rnd1], adj_keys[rnd2]);
+      // const test = biDiPlain(adjacency, edge_list, adj_keys[rnd1], adj_keys[rnd2], 'MILES');
+      const test = biDiPlain(adjacency, edge_list, '-119.726257,36.814331', '-117.534584,47.985595', 'MILES');
+      console.timeEnd('test: ' + i);
+    }
+    console.timeEnd('BiDijkstra');
 
     // console.time('ContractionHierarchy');
     // for (let i = 0; i < 10000; i++) {

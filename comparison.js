@@ -60,11 +60,11 @@ async function main() {
 
   const coords = [];
 
-  for(let i = 0; i < 1000; i++) {
+  for(let i = 0; i < 10000; i++) {
     const rnd1 = Math.floor(Math.random() * adj_length);
     const rnd2 = Math.floor(Math.random() * adj_length);
     const coord = [adj_keys[rnd1], adj_keys[rnd2]];
-    // const coord = [  '-120.604121,46.571019', '-120.50738,46.604559' ];
+    // const coord = [ '-117.435586,47.654681', '-117.434258,47.654681' ];
     coords.push(coord);
   }
 
