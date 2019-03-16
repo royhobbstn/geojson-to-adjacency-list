@@ -12,26 +12,14 @@ async function main() {
   const geojson = JSON.parse(geojson_raw);
 
   geojson.features = geojson.features.filter(feat => {
-    if (/*feat.properties.STFIPS === 6 || feat.properties.STFIPS === 41 ||*/ feat.properties.STFIPS === 53) {
       if(feat.properties.MILES && feat.geometry.coordinates) {
         if(feat.properties.ID !== 477) {
           // TODO deal with this in network cleanup
           return true;
         }
       }
-    }
   });
 
-  // geojson.features = geojson.features.filter(feat => {
-  //   if (feat.properties.CTFIPS === 77 && feat.properties.STFIPS === 53) {
-  //     if(feat.properties.MILES && feat.geometry.coordinates) {
-  //       if(feat.properties.ID !== 477) {
-  //         // TODO deal with this in network cleanup
-  //         return true;
-  //       }
-  //     }
-  //   }
-  // });
 
   const contracted_graph = contractGraph(geojson, {cost_field: 'MILES'});
 

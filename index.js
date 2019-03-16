@@ -208,11 +208,6 @@ function runDijkstra(adj_list, edge_hash, start, end, cost_field, vertex) {
     if(elem) {
       current = elem.value;
     } else {
-      console.log();
-      console.log();
-      console.log('sdasfasdfasfd')
-      console.log(start, end);
-      process.exit();
       current = '';
     }
 

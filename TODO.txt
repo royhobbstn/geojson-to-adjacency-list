@@ -6,17 +6,21 @@ THIS IS a circular loop, ID 477 that causes the problems.  being counted twice. 
 in original it is two separate segments.
 create a rule where contraction hierarchy can't make a segment where the start and end are the same coordinate
 
-334 [ '-121.762444,46.781722', '-121.918772,46.741352' ] 1 '11.11803' 3 '38.36289' 1 '11.11803' 1 '11.11803' 1 '11.11803'
-842 [ '-122.386935,47.54483', '-122.376025,47.564937' ] 1 '1.62891' 2 '1.90136' 1 '1.62891' 1 '1.62891' 1 '1.62891'
-28 [ '-119.176739,46.811444', '-119.369609,46.737917' ] 1 '14.38665' 3 '18.40647' 1 '14.38665' 1 '14.38665' 1 '14.38665'
-198 [ '-123.160965,47.334574', '-122.840442,47.432987' ] 1 '19.95387' 3 '22.69545' 1 '19.95387' 1 '19.95387' 1 '19.95387'
-357 [ '-117.435586,47.654681', '-117.434258,47.654681' ] 1 '0.06199' 3 '0.18769' 1 '0.06199' 1 '0.06199' 1 '0.06199'
 
-- after: parallel bidijkstra
+fix up above
+
+bothers me that bidirectional dijkstra slower than normal.  change graph to entire USA and see if that holds.
+
+
 - speedwise would help a bit if edge hash distance lookup could be replaced by storing cost in adjacency list
 
 Directed graph options
 
+- after: parallel bidijkstra
+
+
 ArcFlags
+
+make contraction hierarchy building process faster
 
 after: golang

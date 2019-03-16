@@ -53,8 +53,6 @@ function runBiDijkstra(adj_list, edge_hash, start, end, cost_field) {
   const geojson_forward = toBestRoute(tentative_shortest_node, forward.prev, edge_hash);
   const geojson_backward = toBestRoute(tentative_shortest_node, backward.prev, edge_hash);
 
-  // console.log(geojson_forward, geojson_backward)
-
   if(save_output) {
     console.log('forward');
     geojson_forward.features.forEach(g=> {
