@@ -12,7 +12,7 @@ async function main() {
   const geojson = JSON.parse(geojson_raw);
 
   geojson.features = geojson.features.filter(feat => {
-      if(feat.properties.MILES && feat.geometry.coordinates) {
+      if(feat.properties.MILES && feat.geometry.coordinates && feat.properties.STFIPS === 53) {
         if(feat.properties.ID !== 477) {
           // TODO deal with this in network cleanup
           return true;
@@ -20,8 +20,9 @@ async function main() {
       }
   });
 
-
+  console.time('contractTime');
   const contracted_graph = contractGraph(geojson, {cost_field: 'MILES'});
+  console.timeEnd('contractTime');
 
   await fs.writeFile('./ch.json', JSON.stringify(contracted_graph[0]), 'utf8');
   await fs.writeFile('./ne.json', JSON.stringify(contracted_graph[1]), 'utf8');

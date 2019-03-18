@@ -1,13 +1,7 @@
 
-This is a big todo:
 
-367 [ '-118.583787,36.794178', '-117.669144,34.06327' ] 98 '292.38698' 98 '292.38699' 34 '292.94442' 98 '292.38699' 98 '292.38699'
-THIS IS a circular loop, ID 477 that causes the problems.  being counted twice.   shouldn't be created at all!
-in original it is two separate segments.
-create a rule where contraction hierarchy can't make a segment where the start and end are the same coordinate
-
-
-fix up above
+make contraction hierarchy building process faster
+-limit hops speed up contraction hierarchy
 
 bothers me that bidirectional dijkstra slower than normal.  change graph to entire USA and see if that holds.
 
@@ -16,11 +10,29 @@ bothers me that bidirectional dijkstra slower than normal.  change graph to enti
 
 Directed graph options
 
-- after: parallel bidijkstra
-
-
 ArcFlags
 
-make contraction hierarchy building process faster
 
 after: golang
+
+---------
+
+API Design
+
+import {runContraction, Chase} from 'chase-js'
+const {runContraction, runValidation, Chase} = require('chase-js');
+
+
+ reference to my geojson cleanup library in Docs
+
+ runContraction options: { (debug) }
+ runValidation (looping segments or otherwise bad geojson)
+
+ return Chase object
+
+ new Chase()
+
+ .saveHierarchy - this is just geojson w extra edges, + arc-flags + options metadata
+ .loadHierarchy -
+ .query({geojson=true, segmentIds=true, distance=true})
+
