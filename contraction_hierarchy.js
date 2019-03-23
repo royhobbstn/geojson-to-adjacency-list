@@ -55,13 +55,17 @@ function contractGraph(geojson, options) {
 
     console.log(bh.size());
 
-    console.time('loop')
+    console.time('loop');
     // recompute to make sure that first node in priority queue
     // is still best candidate to contract
     let found_lowest = false;
     let node_obj = bh.findMinimum();
     const old_score = node_obj.key;
 
+
+    // TODO speedup:  only recalculate ordering occasionally?  every 5 nodes?  10?
+
+    console.time('doWhile');
     do {
       const first_vertex = node_obj.value;
       const new_score = getVertexScore(first_vertex);
@@ -74,15 +78,18 @@ function contractGraph(geojson, options) {
         found_lowest = true;
       }
     } while (found_lowest === false);
+    console.timeEnd('doWhile');
 
     // lowest found, pop it off the queue and contract it
     const v = bh.extractMinimum();
+    console.time('innerLoop');
     contract(v.value, false);
+    console.timeEnd('innerLoop');
     // keep a record of contraction level of each node
     contracted_nodes[v.value] = contraction_level;
     contraction_level++;
 
-    console.timeEnd('loop')
+    console.timeEnd('loop');
   }
 
   // const viz = {
@@ -142,95 +149,96 @@ function contractGraph(geojson, options) {
     let shortcut_count = 0;
 
 
-    // TODO one dijkstra for U, not for each U-W combination
-
-    // Get all pairs of edges
-    const combinations = [];
-
     connections.forEach(u => {
-      connections.forEach(w => {
-        // ignore point to itself, and reverse path
-        if (u === w || combinations.includes(`${w}|${u}`)) {
-          return;
-        }
-        combinations.push(`${u}|${w}`);
-      });
-    });
 
-    if (!get_count_only && debug) {
-      console.log({combinations});
-    }
+      let max_total = 0;
 
-    // shortcut distance for each path
-    combinations.forEach(c => {
-      if (!get_count_only && debug) {
-        console.log('combination: ' + c);
-      }
-      const [u, w] = c.split('|');
       // dist u to v
       const dist1 = edge_hash[`${u}|${v}`].properties[cost_field];
-      // dist v to w
-      const dist2 = edge_hash[`${v}|${w}`].properties[cost_field];
-      const total = dist1 + dist2;
 
-      // get dijkstra shortest path distance for u to w
-      const path = runDijkstra(adjacency_list, edge_hash, u, w, cost_field, v, total);
-      const dijkstra = path.distances[w] || Infinity;
-      // Infinity does happen - what are the consequences
-      if (!get_count_only && debug) {
-        console.log({u, w, v});
-        console.log({path});
-        console.log({total});
-        console.log({dijkstra});
-      }
+      connections.forEach(w => {
+        // ignore node to itself
+        if (u === w) {
+          return;
+        }
 
-      if (total < dijkstra) {
+        // dist v to w
+        const dist2 = edge_hash[`${v}|${w}`].properties[cost_field];
+        const total = dist1 + dist2;
+
+        if(total > max_total){
+          max_total = total;
+        }
+      });
+
+      const path = runDijkstra(adjacency_list, edge_hash, u, null, cost_field, v, max_total);
+      connections.forEach(w => {
+        // ignore node
+        if (u === w) {
+          return;
+        }
+
+        // dist v to w
+        const dist2 = edge_hash[`${v}|${w}`].properties[cost_field];
+        const total = dist1 + dist2;
+
+        const dijkstra = path.distances[w] || Infinity;
+
+        // Infinity does happen - what are the consequences
         if (!get_count_only && debug) {
-          console.log('shortcut !');
+          console.log({u, w, v});
+          console.log({path: path.distances[w]});
+          console.log({total});
+          console.log({dijkstra});
         }
 
-        shortcut_count++;
+        if (total < dijkstra) {
+          if (!get_count_only && debug) {
+            console.log('shortcut !');
+          }
 
-        if (!get_count_only) {
-          adjacency_list[u].push(w);
-          adjacency_list[w].push(u);
+          shortcut_count++;
 
-          const seg1_id = edge_hash[`${u}|${v}`].properties.ID;
-          const seg2_id = edge_hash[`${v}|${w}`].properties.ID;
+          if (!get_count_only) {
+            adjacency_list[u].push(w);
+            // adjacency_list[w].push(u);
 
-          // const link = {
-          //   "type": "Feature",
-          //   "properties": {
-          //     "distance": total,
-          //     "coords1": seg1_id,
-          //     "coords2": seg2_id,
-          //   },
-          //   "geometry": {
-          //     "type": "LineString",
-          //     "coordinates": [u.split(',').map(k => Number(k)), w.split(',').map(k => Number(k))]
-          //   }
-          // };
-          //
-          // links.push(link);
+            const seg1_id = edge_hash[`${u}|${v}`].properties.ID;
+            const seg2_id = edge_hash[`${v}|${w}`].properties.ID;
 
-          edge_hash[`${u}|${w}`] = {
-            "properties": {
-              [cost_field]: total,
-              ID: `${seg1_id},${seg2_id}`
-            }
-          };
+            // const link = {
+            //   "type": "Feature",
+            //   "properties": {
+            //     "distance": total,
+            //     "coords1": seg1_id,
+            //     "coords2": seg2_id,
+            //   },
+            //   "geometry": {
+            //     "type": "LineString",
+            //     "coordinates": [u.split(',').map(k => Number(k)), w.split(',').map(k => Number(k))]
+            //   }
+            // };
+            //
+            // links.push(link);
 
-          edge_hash[`${w}|${u}`] = {
-            "properties": {
-              [cost_field]: total,
-              ID: `${seg1_id},${seg2_id}`
-            }
-          };
+            edge_hash[`${u}|${w}`] = {
+              "properties": {
+                [cost_field]: total,
+                ID: `${seg1_id},${seg2_id}`
+              }
+            };
 
+            edge_hash[`${w}|${u}`] = {
+              "properties": {
+                [cost_field]: total,
+                ID: `${seg1_id},${seg2_id}`
+              }
+            };
+
+          }
         }
-      }
 
-      // remove v from graph?
+      });
 
     });
 
